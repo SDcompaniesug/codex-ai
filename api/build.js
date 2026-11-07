@@ -34,6 +34,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
       - name: Build APK
         run: |
           if [ -f ./gradlew ]; then chmod +x ./gradlew; GRADLE=./gradlew; else GRADLE=gradle; fi

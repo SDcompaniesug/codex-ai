@@ -319,7 +319,7 @@ function addMessage(text,role){const div=document.createElement("div");div.class
 function clearChat(){messages=[];$("chatbox").innerHTML='<div class="msg assistant">Chat cleared. What are we building?</div>'}
 async function sendChat(){const input=$("chatInput"),text=input.value.trim();if(!text||busy)return;input.value="";addMessage(text,"user");messages.push({role:"user",content:text});busy=true;$("sendBtn").disabled=true;try{const answer=await completion(messages);messages.push({role:"assistant",content:answer});addMessage(answer,"assistant")}catch(e){addMessage("Error: "+e.message,"assistant")}busy=false;$("sendBtn").disabled=false}
 $("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
-function cleanPath(path){path=String(path||"").trim().replace(/\\/g,"/").replace(/^\/+ /,"");path=path.replace(/^\/+ /,"");if(!path||path.length>240||path.split("/").some(p=>!p||p===".."||p==="."))return null;if(path.includes(":"))return null;return path}
+function cleanPath(path){path=String(path||"").trim().replace(/\\/g,"/").replace(/^\/+/, "");if(!path||path.length>240||path.split("/").some(p=>!p||p===".."||p==="."))return null;if(path.includes(":"))return null;return path}
 function parseFiles(answer){const regex=/FILE:\s*([^\r\n]+)\s*\r?\n\s*```[^\r\n]*\r?\n([\s\S]*?)```/g;let match,count=0;while((match=regex.exec(answer))){const path=cleanPath(match[1]);if(!path)continue;project[path]=match[2].replace(/\n$/,"");count++}return count}
 function renderFiles(){
  const list=$("fileList"),paths=Object.keys(project).sort();$("fileCount").textContent=paths.length+" project files";if(!paths.length){list.textContent="No project files yet.";return}list.innerHTML="";

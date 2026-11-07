@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,6 +73,7 @@ h3{margin:0 0 10px}
 .buildhero{background:linear-gradient(120deg,#142d4c,#102139);border:1px solid #294d76;border-radius:14px;padding:22px;margin-bottom:15px}
 .buildhero h2{margin:0 0 8px}
 .buildhero p{color:var(--muted);line-height:1.6}
+pre{overflow-wrap:anywhere;white-space:pre-wrap}
 @media(max-width:750px){
 .sidebar{width:65px;padding:10px 5px}
 .brand{font-size:0;text-align:center;margin:8px 0 20px}
@@ -99,7 +101,7 @@ h3{margin:0 0 10px}
 <button class="nav" data-page="analyzer">▣ &nbsp; APK Analyzer</button>
 <button class="nav" data-page="workspace">▤ &nbsp; Projects</button>
 <button class="nav" data-page="settings">⚙ &nbsp; AI Providers</button>
-<div class="sidebottom">CODEX AI v4.1<br><span id="connection">● Not connected</span><br>Android development workspace</div>
+<div class="sidebottom">CODEX AI v4.0<br><span id="connection">● Not connected</span><br>Android development workspace</div>
 </aside>
 
 <main class="main">
@@ -111,7 +113,7 @@ h3{margin:0 0 10px}
 <p class="sub">Your AI-powered Android development workspace.</p>
 <div class="grid">
 <div class="card"><div class="icon">✦</div><h3>AI Developer</h3><p>Generate code, debug errors and discuss Android development.</p><button onclick="showPage('chat')">Open assistant</button></div>
-<div class="card"><div class="icon">⌘</div><h3>App Builder</h3><p>Generate complete Android Studio projects and download them as ZIP files.</p><button onclick="showPage('builder')">Build app</button></div>
+<div class="card"><div class="icon">⌘</div><h3>App Builder</h3><p>Generate complete Android Studio projects and export them as ZIP files.</p><button onclick="showPage('builder')">Build app</button></div>
 <div class="card"><div class="icon">▣</div><h3>APK Analyzer</h3><p>Inspect APK archives and reconstruct an approximate source project.</p><button onclick="showPage('analyzer')">Analyze APK</button></div>
 <div class="card"><div class="icon">▤</div><h3>Projects</h3><p>Edit project files, import projects and export Android Studio ZIPs.</p><button onclick="showPage('workspace')">Open projects</button></div>
 </div>
@@ -120,7 +122,8 @@ h3{margin:0 0 10px}
 </section>
 
 <section class="page" id="chat">
-<h1>AI Developer</h1><p class="sub">Chat with your selected AI provider.</p>
+<h1>AI Developer</h1>
+<p class="sub">Chat with your selected AI provider.</p>
 <div class="row mobilewrap">
 <select id="chatProvider" onchange="changeActiveProvider(this.value)"></select>
 <select id="chatModel" style="flex:1"></select>
@@ -133,27 +136,22 @@ h3{margin:0 0 10px}
 
 <section class="page" id="builder">
 <h1>Android App Builder</h1>
-<p class="sub">Generate a complete Android Studio project and download the ZIP directly.</p>
-
+<p class="sub">Generate a complete Android Studio project, then download the entire project as a ZIP.</p>
 <div class="buildhero">
-<h2>Generate Android Studio ZIP</h2>
+<h2>Generate Android Studio project</h2>
 <p>Describe your application. CodeX AI generates the source project, organizes its folders and packages everything into one ZIP archive.</p>
 <span class="badge">Java + XML</span>
 <span class="badge">Kotlin + XML</span>
 <span class="badge">Complete project</span>
 <span class="badge">ZIP export</span>
 </div>
-
 <div class="card">
 <label>Application name</label>
 <input id="appName" placeholder="My Android App">
-
 <label>Package name</label>
 <input id="packageName" placeholder="com.example.myapp">
-
 <label>Technology</label>
 <select id="technology"><option>Java + XML</option><option>Kotlin + XML</option></select>
-
 <label>Minimum Android SDK</label>
 <select id="minSdk">
 <option value="24">Android 7.0 (API 24)</option>
@@ -161,38 +159,34 @@ h3{margin:0 0 10px}
 <option value="26">Android 8.0 (API 26)</option>
 <option value="28">Android 9 (API 28)</option>
 </select>
-
 <label>Target SDK</label>
 <select id="targetSdk"><option value="35">API 35</option><option value="34">API 34</option></select>
-
-<label>AI provider</label>
-<select id="builderProvider"></select>
-
+<label>AI provider</label><select id="builderProvider"></select>
 <label>Application description</label>
 <textarea id="appDescription" style="min-height:180px" placeholder="Describe all screens, features, database, API integrations, navigation, permissions, design and functionality..."></textarea>
-
 <div class="row mobilewrap" style="margin-top:15px">
-<button id="buildBtn" onclick="buildProject()">Generate & Download Android Studio ZIP</button>
+<button id="buildBtn" onclick="buildProject()">Generate complete project</button>
 <button class="secondary" onclick="showPage('workspace')">View project files</button>
 </div>
 <div class="progress"><div id="buildProgress"></div></div>
-<p id="buildStatus" class="small">Ready to generate your Android Studio project.</p>
+<p id="buildStatus" class="small">Ready to build.</p>
 </div>
 
 <div class="card">
-<h3>GitHub APK compilation</h3>
-<p>CodeX creates a private GitHub repository for this project and compiles it with GitHub Actions. No GitHub login is needed in the browser.</p>
+<h3>Project ZIP and APK build</h3>
+<p>A source ZIP can be created directly in this browser. APK compilation uses GitHub Actions through your secured build backend.</p>
 <label>Build type</label>
 <select id="apkBuildType"><option value="debug">Debug APK</option><option value="release">Release APK (unsigned)</option></select>
 <label>Application icon (PNG or JPG)</label>
 <input id="appIconFile" type="file" accept="image/png,image/jpeg">
-<p class="small">Optional. The image is converted into Android launcher icon resources and added to the project before upload.</p>
+<p class="small">Optional. The image is converted into Android launcher icon resources and added to the project.</p>
 <div class="row mobilewrap" style="margin-top:12px">
-<button class="green" id="apkBuildBtn" onclick="buildAPK()">Create GitHub Repository & Compile APK</button>
+<button class="green" id="apkBuildBtn" onclick="buildAPK()">Compile APK using GitHub Actions</button>
+<button class="secondary" onclick="downloadProject()">Download Android Studio ZIP</button>
 </div>
-<p id="apkBuildStatus" class="small">Ready. Select Debug or Release and start the build.</p>
+<p id="apkBuildStatus" class="small">Ready. Generate or import a project first.</p>
 <div class="progress"><div id="githubBuildProgress"></div></div>
-<pre id="githubBuildLogs" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;background:#0c1525;border:1px solid var(--line);border-radius:9px;padding:12px;color:#c5d5eb">Build logs will appear here.</pre>
+<pre id="githubBuildLogs" style="max-height:260px;overflow:auto;background:#0c1525;border:1px solid var(--line);border-radius:9px;padding:12px;color:#c5d5eb">Build logs will appear here.</pre>
 <a id="githubRunLink" class="small hidden" target="_blank" rel="noopener">Open GitHub Actions run</a>
 </div>
 </section>
@@ -209,21 +203,21 @@ h3{margin:0 0 10px}
 <label>AI provider</label><select id="analyzerProvider"></select>
 <div class="row mobilewrap" style="margin-top:15px">
 <button id="analyzeBtn" onclick="analyzeAPK()">Analyze APK</button>
-<button class="secondary" onclick="reconstructAPK()">Reconstruct project ZIP</button>
+<button class="secondary" onclick="reconstructAPK()">Reconstruct project</button>
 </div>
 <div class="progress"><div id="apkProgress"></div></div>
 <p id="apkStatus" class="small">Waiting for APK.</p>
 </div>
-<div class="card"><h3>Analysis report</h3><pre id="apkReport" style="white-space:pre-wrap;overflow-wrap:anywhere;color:#c5d5eb">No analysis yet.</pre></div>
+<div class="card"><h3>Analysis report</h3><pre id="apkReport" style="color:#c5d5eb">No analysis yet.</pre></div>
 </section>
 
 <section class="page" id="workspace">
 <h1>Project Workspace</h1>
-<p class="sub">Manage Android source files and export a complete Android Studio project ZIP.</p>
+<p class="sub">Manage Android source files and export a complete Android Studio project.</p>
 <div class="card">
 <div class="row mobilewrap">
 <button onclick="newFile()">+ New file</button>
-<button class="green" onclick="downloadProject()">Download project ZIP</button>
+<button class="green" onclick="downloadProject()">Export complete ZIP</button>
 <button class="secondary" onclick="$('importFiles').click()">Import ZIP</button>
 <input id="importFiles" type="file" accept=".zip" hidden>
 </div>
@@ -293,7 +287,6 @@ Default configuration:
 - minSdk 24 unless requested otherwise
 
 Generate real functionality, not placeholder buttons.
-
 Do not claim code was compiled or tested unless it actually was.
 
 FILE OUTPUT FORMAT:
@@ -303,7 +296,6 @@ complete file content
 \`\`\`
 
 Each file must have its own FILE header and fenced code block.
-Output complete files, not snippets.
 Use valid paths relative to the Android project root.
 Include all essential source files, XML layouts, resources, manifest and Gradle configuration.
 
@@ -366,8 +358,6 @@ $(id).value=currentProvider();
 function initializeProviders(){
 fillProviderSelects();
 $("fallbackEnabled").checked=localStorage.getItem("cx_fallback")!=="false";
-$("buildServiceUrl").value=localStorage.getItem("cx_build_url")||"";
-$("buildServiceToken").value=localStorage.getItem("cx_build_token")||"";
 renderFallback();renderConnections();loadProviderForm();refreshUI();
 }
 function loadProviderForm(){
@@ -383,339 +373,189 @@ $("providerStatus").textContent="Editing "+name+". Fetch models or enter a model
 function renderDiscoveredSelect(name){
 const models=safeJSON("cx_models_"+name,[]);
 $("discoveredModels").innerHTML='<option value="">Select a discovered model</option>'+models.map(m=>'<option value="'+escapeHTML(m)+'">'+escapeHTML(m)+'</option>').join("");
-const model=getConfig(name).model;
-if(model)$("discoveredModels").value=model;
 }
 function saveProvider(){
-const name=$("providerSelect").value;
-const base=$("providerEndpoint").value.trim().replace(/\/+$/,"");
-const key=$("providerKey").value.trim();
-const model=$("providerModel").value.trim();
-const account=$("cloudflareAccount").value.trim();
-if(!base){$("providerStatus").textContent="Enter an API base URL.";return false}
-if(name==="Cloudflare"&&!account){$("providerStatus").textContent="Cloudflare account ID is required.";return false}
-const configs=getConfigs();
-configs[name]={key,base,model,account};
+const name=$("providerSelect").value,configs=getConfigs();
+configs[name]={key:$("providerKey").value.trim(),base:$("providerEndpoint").value.trim().replace(/\/+$/,""),model:$("providerModel").value.trim(),account:$("cloudflareAccount").value.trim()};
 saveConfigs(configs);
 localStorage.setItem("cx_active_provider",name);
+$("chatProvider").value=name;$("builderProvider").value=name;$("analyzerProvider").value=name;
+$("providerStatus").textContent=name+" settings saved.";
 renderConnections();renderFallback();refreshUI();
-$("providerStatus").textContent=name+" configuration saved.";
-return true;
 }
 function changeActiveProvider(name){
 if(!PROVIDERS[name])return;
 localStorage.setItem("cx_active_provider",name);
 $("providerSelect").value=name;loadProviderForm();refreshUI();
 }
-function refreshUI(){
-const name=currentProvider(),cfg=getConfig(name);
-$("connection").textContent=cfg.key?"● "+name+" configured":"● Not connected";
-$("topStatus").textContent=cfg.key?"● "+name+" selected":"● Configure provider";
-$("homeModel").textContent=cfg.key?name+" • "+(cfg.model||"No model selected"):"No active provider configured.";
-const providers=PROVIDER_NAMES.filter(p=>configured(p));
-$("dashboardProviders").innerHTML=providers.length?providers.map(p=>'<span class="badge">'+escapeHTML(p)+'</span>').join(" "):'<span class="small">No providers configured yet.</span>';
-$("chatProvider").value=name;updateChatModels();
+function renderConnections(){
+$("providerConnections").innerHTML=PROVIDER_NAMES.map(n=>{
+const c=getConfig(n),ok=configured(n);
+return '<div class="providerrow"><span>'+n+' <span class="small">'+(ok?"Configured":"Not configured")+'</span></span><span class="status">'+(ok?"● Ready":"○")+'</span></div>';
+}).join("");
+$("dashboardProviders").innerHTML=PROVIDER_NAMES.filter(configured).map(n=>'<span class="badge">'+n+'</span>').join("")||'<p>No configured providers.</p>';
 }
-function updateChatModels(){
-const name=currentProvider(),models=safeJSON("cx_models_"+name,[]),cfg=getConfig(name);
-const values=[...new Set([cfg.model,...models].filter(Boolean))];
-$("chatModel").innerHTML=values.length?values.map(m=>'<option value="'+escapeHTML(m)+'">'+escapeHTML(m)+'</option>').join(""):'<option value="">No model selected — configure provider</option>';
-if(cfg.model)$("chatModel").value=cfg.model;
-}
-function useSelectedModel(){
-const model=$("discoveredModels").value;
-if(!model){$("providerStatus").textContent="Select a model first.";return}
-$("providerModel").value=model;saveProvider();
-$("providerStatus").textContent="Selected model saved: "+model;
-}
-function removeAllKeys(){
-if(!confirm("Remove all stored provider API keys?"))return;
-const configs=getConfigs();Object.keys(configs).forEach(p=>configs[p].key="");
-saveConfigs(configs);$("providerKey").value="";renderConnections();refreshUI();
-$("providerStatus").textContent="All API keys removed.";
-}
-
-/* PROVIDER REQUESTS */
-function providerURL(name,path){
-const cfg=getConfig(name);
-if(name==="Cloudflare"){
-if(!cfg.account)throw Error("Cloudflare account ID is missing.");
-return cfg.base.replace(/\/+$/,"")+"/"+encodeURIComponent(cfg.account)+path;
-}
-return cfg.base.replace(/\/+$/,"")+path;
-}
-function authHeaders(name){
-const cfg=getConfig(name);
-if(!cfg.key)throw Error(name+": API key is missing.");
-const h={"Content-Type":"application/json","Authorization":"Bearer "+cfg.key};
-if(name==="Gemini"){delete h.Authorization;h["x-goog-api-key"]=cfg.key}
-if(name==="OpenRouter"){
-h["HTTP-Referer"]=location.origin;
-h["X-OpenRouter-Title"]="CodeX AI";
-}
-return h;
-}
-async function httpJSON(url,options){
-let response;
-try{response=await fetch(url,options)}
-catch(e){throw new Error("Network/CORS error: "+e.message+". The provider may block browser requests. A backend proxy may be required.")}
-const raw=await response.text();
-let data={};
-try{data=raw?JSON.parse(raw):{}}catch{data={raw}}
-if(!response.ok){
-const msg=data.error?.message||data.message||data.errors?.map(x=>x.message).join(", ")||data.raw||JSON.stringify(data);
-const e=new Error("HTTP "+response.status+": "+msg);e.status=response.status;throw e;
-}
-if(data.success===false&&data.errors?.length)throw new Error(data.errors.map(x=>x.message).join(", "));
-return data;
-}
-async function requestProvider(name,path,body=null){
-const options={method:body?"POST":"GET",headers:authHeaders(name)};
-if(body)options.body=JSON.stringify(body);
-return httpJSON(providerURL(name,path),options);
-}
-function modelIds(name,data){
-let items=[];
-if(name==="Gemini"){
-items=(data.models||[]).filter(m=>!m.supportedGenerationMethods||m.supportedGenerationMethods.includes("generateContent")).map(m=>m.name);
-}else if(name==="Cohere"){
-items=(data.models||[]).filter(m=>!m.endpoints||m.endpoints.includes("chat")).map(m=>m.name);
-}else if(name==="Cloudflare"){
-const result=data.result;
-items=Array.isArray(result)?result.map(m=>m.name||m.id):[];
-}else{
-const result=data.data||data.models||data.result||[];
-items=Array.isArray(result)?result.map(m=>typeof m==="string"?m:(m.id||m.name||m.model)):[];
-}
-return [...new Set(items.filter(Boolean).map(id=>String(id).replace(/^models\//,"")))].sort();
-}
-async function fetchModels(name){
-const cfg=getConfig(name);
-if(!cfg.key)throw new Error("API key is missing. Enter and save it first.");
-if(name==="Gemini"){
-return httpJSON("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",{
-method:"GET",headers:{"x-goog-api-key":cfg.key}
-});
-}
-if(name==="Cohere"){
-return httpJSON(cfg.base.replace(/\/+$/,"")+"/v1/models?page_size=1000&endpoint=chat",{
-method:"GET",headers:{"Authorization":"Bearer "+cfg.key,"Accept":"application/json"}
-});
-}
-if(name==="Cloudflare")return requestProvider(name,"/ai/models/search");
-return requestProvider(name,"/models");
-}
-async function discoverModels(){
-const name=$("providerSelect").value;
-if(!saveProvider())return;
-$("discoverBtn").disabled=true;
-$("discoveredModels").innerHTML='<option>Fetching models...</option>';
-$("providerStatus").textContent="Fetching models from "+name+"...";
-try{
-const data=await fetchModels(name),models=modelIds(name,data);
-if(!models.length)throw new Error("No compatible model IDs were returned. Check the provider API or enter a model ID manually.");
-localStorage.setItem("cx_models_"+name,JSON.stringify(models));
-$("discoveredModels").innerHTML='<option value="">Select a model</option>'+models.map(m=>'<option value="'+escapeHTML(m)+'">'+escapeHTML(m)+'</option>').join("");
-const old=getConfig(name).model,selected=old&&models.includes(old)?old:models[0];
-$("discoveredModels").value=selected;$("providerModel").value=selected;
-const configs=getConfigs();configs[name]={...getConfig(name),model:selected};saveConfigs(configs);
-updateChatModels();refreshUI();
-$("providerStatus").textContent="Success: "+models.length+" models found. Selected "+selected+".";
-}catch(e){
-$("discoveredModels").innerHTML='<option value="">Discovery failed</option>';
-$("providerStatus").textContent="Model discovery failed: "+e.message;
-}finally{$("discoverBtn").disabled=false}
-}
-function selectedModel(name){
-if(name===currentProvider()&&$("chatModel").value)return $("chatModel").value;
-return getConfig(name).model;
-}
-
-/* CHAT ADAPTERS */
-async function callGemini(msgs){
-const cfg=getConfig("Gemini"),model=selectedModel("Gemini")||cfg.model;
-if(!model)throw new Error("Gemini: no model selected.");
-const contents=[];let systemText="";
-for(const m of msgs){
-if(m.role==="system"){systemText+=m.content+"\n";continue}
-contents.push({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]});
-}
-const body={contents,generationConfig:{temperature:0.2}};
-if(systemText.trim())body.systemInstruction={parts:[{text:systemText}]};
-const data=await httpJSON("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
-method:"POST",headers:authHeaders("Gemini"),body:JSON.stringify(body)
-});
-return (data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("\n")||"The model returned an empty response.";
-}
-async function callCohere(msgs){
-const model=selectedModel("Cohere")||getConfig("Cohere").model;
-if(!model)throw new Error("Cohere: no model selected.");
-const body={model,messages:msgs.map(m=>({
-role:m.role==="system"?"system":m.role==="assistant"?"assistant":"user",
-content:m.content
-}))};
-const data=await requestProvider("Cohere","/v2/chat",body);
-return (data.message?.content||[]).filter(x=>x.type==="text").map(x=>x.text||"").join("\n")||"Empty response";
-}
-async function callOpenAI(name,msgs){
-const model=selectedModel(name)||getConfig(name).model;
-if(!model)throw new Error(name+": no model selected.");
-const data=await requestProvider(name,"/chat/completions",{
-model,messages:msgs,temperature:0.2,stream:false
-});
-return data.choices?.[0]?.message?.content||data.output_text||"The model returned an empty response.";
-}
-async function callProvider(name,msgs){
-if(name==="Gemini")return callGemini(msgs);
-if(name==="Cohere")return callCohere(msgs);
-return callOpenAI(name,msgs);
-}
-function shouldFallback(error){
-const s=error.status||0,m=String(error.message||"").toLowerCase();
-if([400,401,403,404,422].includes(s))return false;
-return [402,408,409,429].includes(s)||s>=500||/quota|rate.?limit|tokens used up|insufficient|capacity|overloaded|temporarily unavailable|billing|plan tokens/.test(m);
-}
-async function completion(msgs,system=SYSTEM){
-const all=[{role:"system",content:system},...msgs],first=currentProvider();
-const enabled=localStorage.getItem("cx_fallback")!=="false";
-const order=enabled?getOrder():[first],sequence=[first,...order.filter(p=>p!==first)],errors=[];
-for(const name of sequence){
-if(!configured(name))continue;
-try{
-$("topStatus").textContent="● Connecting: "+name;
-const answer=await callProvider(name,all);
-localStorage.setItem("cx_active_provider",name);
-$("chatProvider").value=name;$("providerSelect").value=name;refreshUI();
-$("topStatus").textContent="● Connected: "+name;
-return answer;
-}catch(e){
-errors.push(name+": "+e.message);
-if(!shouldFallback(e))throw e;
-}
-}
-throw new Error(errors.length?"All configured providers failed:\n"+errors.join("\n"):"No configured provider with an API key and model is available. Open AI Providers, save an API key and model ID.");
-}
-async function testProvider(){
-if(!saveProvider())return;
-const name=$("providerSelect").value;
-$("providerStatus").textContent="Testing "+name+"...";
-try{
-const cfg=getConfig(name);
-if(!cfg.key)throw new Error("API key is missing.");
-if(!cfg.model)throw new Error("Model ID is missing.");
-const answer=await callProvider(name,[{role:"user",content:"Reply with exactly: CodeX connection successful."}]);
-$("providerStatus").textContent="Connection successful: "+answer.slice(0,180);
-}catch(e){$("providerStatus").textContent="Test failed: "+e.message}
-}
-
-/* FALLBACK */
 function renderFallback(){
-$("fallbackList").innerHTML=getOrder().map((name,i)=>'<div class="orderitem"><span>'+(i+1)+'. '+escapeHTML(name)+'</span><button class="secondary" onclick="moveProvider(\''+name+'\',-1)">↑</button><button class="secondary" onclick="moveProvider(\''+name+'\',1)">↓</button></div>').join("");
+const order=getOrder();
+$("fallbackList").innerHTML=order.map((n,i)=>'<div class="orderitem"><span>'+ (i+1)+'. '+n+(configured(n)?"":" (not configured)")+'</span><button class="secondary" onclick="moveOrder('+i+',-1)">↑</button><button class="secondary" onclick="moveOrder('+i+',1)">↓</button></div>').join("");
 }
-function moveProvider(name,direction){
-const order=getOrder(),i=order.indexOf(name),j=i+direction;
-if(j<0||j>=order.length)return;
-[order[i],order[j]]=[order[j],order[i]];
-localStorage.setItem("cx_fallback_order",JSON.stringify(order));renderFallback();
+function moveOrder(i,d){
+const a=getOrder(),j=i+d;if(j<0||j>=a.length)return;
+[a[i],a[j]]=[a[j],a[i]];
+localStorage.setItem("cx_fallback_order",JSON.stringify(a));renderFallback();
 }
 function saveFallback(){
 localStorage.setItem("cx_fallback",$("fallbackEnabled").checked?"true":"false");
+localStorage.setItem("cx_fallback_order",JSON.stringify(getOrder()));
 $("providerStatus").textContent="Fallback settings saved.";
 }
-function renderConnections(){
-$("providerConnections").innerHTML=PROVIDER_NAMES.map(name=>{
-const c=getConfig(name);
-return '<div class="providerrow"><span>'+escapeHTML(name)+'</span><span class="small">'+(c.key?"API key saved":"No API key")+' • '+(c.model?"Model selected":"No model")+'</span></div>';
-}).join("");
+function removeAllKeys(){
+if(!confirm("Remove all saved provider API keys?"))return;
+const c=getConfigs();Object.keys(c).forEach(n=>c[n].key="");saveConfigs(c);
+renderConnections();renderFallback();refreshUI();loadProviderForm();
+}
+function refreshUI(){
+const n=currentProvider(),c=getConfig(n),ok=configured(n);
+$("connection").textContent=ok?"● "+n+" connected":"● Not connected";
+$("homeModel").textContent=ok?n+" • "+c.model:"No provider configured.";
+$("chatProvider").value=n;
+$("chatModel").innerHTML=ok?'<option>'+escapeHTML(c.model)+'</option>':'<option>No model configured</option>';
+$("topStatus").textContent=ok?"● Connected":"● Ready";
 }
 
-/* CHAT */
-function addMessage(text,role){
-const div=document.createElement("div");div.className="msg "+role;div.textContent=text;
+async function providerRequest(name,history){
+const cfg=getConfig(name),p=PROVIDERS[name];
+if(!cfg.key||!cfg.model)throw new Error(name+" is not configured.");
+const messagesForApi=history.map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.content}));
+let url="",headers={"Content-Type":"application/json"},body={};
+if(p.type==="gemini"){
+url=cfg.base+"/models/"+encodeURIComponent(cfg.model)+":generateContent?key="+encodeURIComponent(cfg.key);
+body={contents:history.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}))};
+}else if(p.type==="cohere"){
+url=cfg.base+"/v2/chat";
+headers.Authorization="Bearer "+cfg.key;
+body={model:cfg.model,messages:messagesForApi};
+}else if(p.type==="cloudflare"){
+if(!cfg.account)throw new Error("Cloudflare account ID is required.");
+url=cfg.base+"/"+encodeURIComponent(cfg.account)+"/ai/run/"+encodeURIComponent(cfg.model);
+headers.Authorization="Bearer "+cfg.key;
+body={messages:messagesForApi};
+}else{
+url=cfg.base+"/chat/completions";
+headers.Authorization="Bearer "+cfg.key;
+body={model:cfg.model,messages:[{role:"system",content:SYSTEM},...messagesForApi],temperature:0.3};
+}
+const r=await fetch(url,{method:"POST",headers,body:JSON.stringify(body)});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error?.message||data.message||"HTTP "+r.status);
+let text="";
+if(p.type==="gemini")text=data.candidates?.[0]?.content?.parts?.map(x=>x.text||"").join("\n")||"";
+else if(p.type==="cohere")text=data.message?.content?.map(x=>x.text||"").join("\n")||"";
+else if(p.type==="cloudflare")text=data.result?.response||data.result?.output?.[0]?.content?.[0]?.text||"";
+else text=data.choices?.[0]?.message?.content||"";
+if(!text)throw new Error("The provider returned an empty response.");
+return text;
+}
+async function completion(history,preferred){
+const start=preferred||currentProvider();
+const fallback=localStorage.getItem("cx_fallback")!=="false";
+const order=fallback?getOrder().filter(configured):[start];
+const attempts=[start,...order.filter(x=>x!==start)];
+let errors=[];
+for(const n of attempts){
+if(!configured(n)){errors.push(n+": not configured");continue}
+try{return await providerRequest(n,history)}catch(e){errors.push(n+": "+e.message)}
+}
+throw new Error("All configured providers failed.\n"+errors.join("\n"));
+}
+async function discoverModels(){
+saveProvider();
+const name=$("providerSelect").value,cfg=getConfig(name),p=PROVIDERS[name];
+$("providerStatus").textContent="Fetching models...";
+try{
+let url="",headers={Authorization:"Bearer "+cfg.key};
+if(p.type==="gemini")url=cfg.base+"/models?key="+encodeURIComponent(cfg.key);
+else if(p.type==="cloudflare")url=cfg.base+"/"+encodeURIComponent(cfg.account)+"/ai/models/search";
+else if(p.type==="cohere")url=cfg.base+"/v1/models";
+else url=cfg.base+"/models";
+if(p.type==="cloudflare"&&!cfg.account)throw new Error("Enter your Cloudflare account ID.");
+const r=await fetch(url,{headers});
+const data=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(data.error?.message||data.message||"HTTP "+r.status);
+let models=[];
+if(p.type==="gemini")models=(data.models||[]).map(x=>(x.name||"").replace(/^models\//,"")).filter(x=>x.includes("generateContent"));
+else if(p.type==="cloudflare")models=(data.result||[]).map(x=>x.name||x.id).filter(Boolean);
+else models=(data.data||data.models||[]).map(x=>x.id||x.name).filter(Boolean);
+if(!models.length)throw new Error("No models were returned. Enter a model ID manually.");
+localStorage.setItem("cx_models_"+name,JSON.stringify(models));
+renderDiscoveredSelect(name);
+$("providerStatus").textContent=models.length+" models found.";
+}catch(e){$("providerStatus").textContent="Model discovery failed: "+e.message}
+}
+function useSelectedModel(){
+const m=$("discoveredModels").value;if(!m)return;
+$("providerModel").value=m;saveProvider();
+}
+async function testProvider(){
+saveProvider();
+const name=$("providerSelect").value;
+$("providerStatus").textContent="Testing connection...";
+try{
+const result=await providerRequest(name,[{role:"user",content:"Reply with: CodeX AI connection successful."}]);
+$("providerStatus").textContent="Connection successful: "+result.slice(0,100);
+}catch(e){$("providerStatus").textContent="Connection failed: "+e.message}
+}
+function addMessage(role,text){
+const div=document.createElement("div");
+div.className="msg "+role;div.textContent=text;
 $("chatbox").appendChild(div);$("chatbox").scrollTop=$("chatbox").scrollHeight;
 }
-function clearChat(){messages=[];$("chatbox").innerHTML='<div class="msg assistant">Chat cleared. What are we building?</div>'}
+function clearChat(){
+messages=[];$("chatbox").innerHTML='<div class="msg assistant">Hello! I am CodeX AI. What are we building today?</div>';
+}
 async function sendChat(){
 const input=$("chatInput"),text=input.value.trim();
 if(!text||busy)return;
-input.value="";addMessage(text,"user");messages.push({role:"user",content:text});
-busy=true;$("sendBtn").disabled=true;
+if(!configured(currentProvider())){alert("Configure an AI provider first.");showPage("settings");return}
+input.value="";messages.push({role:"user",content:text});addMessage("user",text);
+$("sendBtn").disabled=true;
 try{
-const answer=await completion(messages);
-messages.push({role:"assistant",content:answer});addMessage(answer,"assistant");
-}catch(e){addMessage("Error: "+e.message,"assistant")}
-busy=false;$("sendBtn").disabled=false;
+const answer=await completion([{role:"user",content:SYSTEM+"\n\n"+text}],$("chatProvider").value);
+messages.push({role:"assistant",content:answer});addMessage("assistant",answer);
+}catch(e){addMessage("assistant","Error: "+e.message)}
+finally{$("sendBtn").disabled=false}
 }
-$("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
+$("chatInput").addEventListener("keydown",e=>{
+if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}
+});
 
-/* PROJECT FILES */
 function cleanPath(path){
-path=String(path||"").trim().replace(/\/g,"/").replace(/^\/+/,"");
-if(!path||path.length>240||path.split("/").some(p=>!p||p===".."||p==="."))return null;
-if(path.includes(":"))return null;
-return path;
+let p=String(path||"").replace(/\\/g,"/").replace(/^\/+/,"");
+if(!p||p.split("/").some(x=>x===".."||x==="."))return "";
+return p;
 }
 function parseFiles(answer){
-const regex=/FILE:\s*([^\r\n]+)\s*\r?\n\s*```[^\r\n]*\r?\n([\s\S]*?)```/g;
+const re=/FILE:\s*(.+?)\s*\n```[^\n]*\n([\s\S]*?)```/g;
 let match,count=0;
-while((match=regex.exec(answer))){
-const path=cleanPath(match[1]);
+while((match=re.exec(answer))){
+const path=cleanPath(match[1].trim());
 if(!path)continue;
 project[path]=match[2].replace(/\n$/,"");count++;
 }
 return count;
 }
-function renderFiles(){
-const list=$("fileList"),paths=Object.keys(project).sort();
-$("fileCount").textContent=paths.length+" project files";
-if(!paths.length){list.textContent="No project files yet.";return}
-list.innerHTML="";
-paths.forEach(path=>{
-const el=document.createElement("div");
-el.className="fileitem"+(path===selectedFile?" selected":"");
-el.textContent=path;
-el.onclick=()=>{
-saveFile(false);selectedFile=path;$("currentFile").textContent=path;
-$("fileEditor").value=project[path];renderFiles();
-};
-list.appendChild(el);
-});
-}
-function saveFile(showStatus=true){
-if(!selectedFile)return;
-project[selectedFile]=$("fileEditor").value;
-if(showStatus)$("buildStatus").textContent="Saved "+selectedFile;
-}
-function newFile(){
-const path=cleanPath(prompt("Enter relative path, e.g. app/src/main/java/com/example/MainActivity.java"));
-if(!path){alert("Invalid file path.");return}
-if(Object.prototype.hasOwnProperty.call(project,path)&&!confirm("This file already exists. Replace it?"))return;
-project[path]="";selectedFile=path;$("currentFile").textContent=path;$("fileEditor").value="";renderFiles();
-}
-function safeAppFolder(name){
-return String(name||"AndroidProject").trim().replace(/[^a-zA-Z0-9._-]+/g,"_").replace(/^[_\.]+|[_\.]+$/g,"")||"AndroidProject";
-}
-function packageToPath(pkg){return pkg.split(".").join("/")}
+function escapeXML(s){return String(s).replace(/[<>&'"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]))}
+function safeAppFolder(s){return String(s||"AndroidProject").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,50)||"AndroidProject"}
+function putDefault(path,value){if(!project[path])project[path]=value}
 
-/* ANDROID PROJECT SCAFFOLD */
-function putDefault(path,content){
-if(!Object.prototype.hasOwnProperty.call(project,path))project[path]=content;
-}
-function escapeXML(s){
-return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
-}
 function ensureAndroidProject(){
-const appName=$("appName").value.trim()||projectName||"My Android App";
+const appName=$("appName").value.trim()||projectName||"MyAndroidApp";
 const pkg=$("packageName").value.trim()||projectPackage||"com.example.myapp";
 const technology=$("technology").value;
-const minSdk=Number($("minSdk").value)||24;
-const targetSdk=Number($("targetSdk").value)||35;
+const minSdk=$("minSdk").value,targetSdk=$("targetSdk").value;
 const isJava=technology==="Java + XML";
-const mainClass=isJava?"MainActivity.java":"MainActivity.kt";
-const mainPath="app/src/main/java/"+packageToPath(pkg)+"/"+mainClass;
-
-const activityCode=isJava?
-`package ${pkg};
+const mainPath=isJava?"app/src/main/java/"+pkg.replace(/\./g,"/")+"/MainActivity.java":"app/src/main/java/"+pkg.replace(/\./g,"/")+"/MainActivity.kt";
+const activityCode=isJava?`package ${pkg};
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -726,8 +566,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
-}`:
-`package ${pkg}
+}`:`package ${pkg}
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -738,7 +577,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 }`;
-
 const settings=`pluginManagement {
     repositories {
         google()
@@ -800,7 +638,7 @@ const manifest=`<?xml version="1.0" encoding="utf-8"?>
         android:supportsRtl="true"
         android:theme="@style/Theme.CodeXApp">
         <activity
-            android:name="${pkg}.MainActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -870,49 +708,64 @@ Android Studio project generated with CodeX AI.
 - Java compatibility: 17
 
 Open this folder in Android Studio and sync Gradle.
-
-This is a source project ZIP. It has not been compiled by this browser.
-The Gradle wrapper JAR is not fabricated or included.
 `);
 projectName=appName;projectPackage=pkg;
 return {appName,pkg,technology};
 }
 function validateProject(){
 const errors=[];
-const required=["settings.gradle","build.gradle","gradle.properties","app/build.gradle","app/src/main/AndroidManifest.xml"];
-required.forEach(p=>{if(!project[p])errors.push("Missing "+p)});
-const source=Object.keys(project).some(p=>/^app\/src\/main\/java\//.test(p)&&/\.(java|kt)$/.test(p));
-if(!source)errors.push("No Java/Kotlin source file found.");
+["settings.gradle","build.gradle","gradle.properties","app/build.gradle","app/src/main/AndroidManifest.xml"].forEach(p=>{if(!project[p])errors.push("Missing "+p)});
+if(!Object.keys(project).some(p=>/^app\/src\/main\/java\//.test(p)&&/\.(java|kt)$/.test(p)))errors.push("No Java/Kotlin source file found.");
 if(!project["app/src/main/res/layout/activity_main.xml"])errors.push("No activity_main.xml layout found.");
 return errors;
 }
+function renderFiles(){
+const paths=Object.keys(project).sort();
+$("fileCount").textContent=paths.length+" project files";
+$("fileList").innerHTML=paths.length?paths.map(p=>'<div class="fileitem '+(p===selectedFile?"selected":"")+'" onclick="selectFile(\''+escapeHTML(p.replace(/'/g,"\\'"))+'\')">'+escapeHTML(p)+'</div>').join(""):"No project files yet.";
+}
+function selectFile(path){
+saveFile(false);selectedFile=path;$("currentFile").textContent=path;$("fileEditor").value=project[path]||"";renderFiles();
+}
+function saveFile(refresh=true){
+if(selectedFile!==null)project[selectedFile]=$("fileEditor").value;
+if(refresh)renderFiles();
+}
+function newFile(){
+const path=prompt("Enter file path relative to project root:");
+if(!path)return;
+const safe=cleanPath(path);if(!safe)return alert("Invalid file path.");
+if(project[safe]!==undefined)return alert("That file already exists.");
+project[safe]="";selectFile(safe);
+}
+async function downloadProject(automatic=false){
+saveFile(false);
+if(!Object.keys(project).length){if(!automatic)alert("No project files to export.");return false}
+if(typeof JSZip==="undefined")throw new Error("ZIP library unavailable.");
+const folder=safeAppFolder(projectName||"AndroidProject"),zip=new JSZip();
+for(const [path,content] of Object.entries(project)){
+const safe=cleanPath(path);if(!safe)continue;
+if(typeof content==="string"&&content.startsWith("data:image/"))zip.file(folder+"/"+safe,content.split(",")[1],{base64:true});
+else zip.file(folder+"/"+safe,content);
+}
+const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});
+const url=URL.createObjectURL(blob),a=document.createElement("a");
+a.href=url;a.download=folder+"-Android-Studio-Project.zip";document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),10000);
+return true;
+}
 
-/* BUILD PROJECT AND AUTOMATIC ZIP DOWNLOAD */
 async function buildProject(){
 const name=$("appName").value.trim()||"MyAndroidApp";
 const pkg=$("packageName").value.trim()||"com.example.myapp";
 const desc=$("appDescription").value.trim();
-
-if(!desc){alert("Describe your application first.");return}
-if(!/^[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)+$/.test(pkg)){
-alert("Enter a valid package name.");return;
-}
+if(!desc)return alert("Describe your application first.");
+if(!/^[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)+$/.test(pkg))return alert("Enter a valid package name.");
 if(busy)return;
-
-if(typeof JSZip==="undefined"){
-alert("ZIP library unavailable. Check your internet connection.");
-return;
-}
-
-busy=true;
-$("buildBtn").disabled=true;
-project={};
-selectedFile=null;
-projectName=name;
-projectPackage=pkg;
-$("buildProgress").style.width="5%";
-$("buildStatus").textContent="Generating complete Android Studio project...";
-
+if(typeof JSZip==="undefined")return alert("ZIP library unavailable.");
+if(!configured($("builderProvider").value))return alert("Configure your selected AI provider first.");
+busy=true;$("buildBtn").disabled=true;project={};selectedFile=null;projectName=name;projectPackage=pkg;
+$("buildProgress").style.width="10%";$("buildStatus").textContent="Generating Android Studio project...";
 const prompt=`Create a complete professional Android Studio application.
 
 Application name: ${name}
@@ -926,137 +779,45 @@ Use AGP 8.7.3, compileSdk 35 and Java 17.
 APPLICATION REQUIREMENTS:
 ${desc}
 
-Build a real, professional, multi-screen application.
-Implement actual functionality, navigation, storage, APIs and error handling requested.
-Do not use fake buttons or placeholder screens.
-
-Include all required files:
-- settings.gradle
-- root build.gradle
-- gradle.properties
-- app/build.gradle
-- AndroidManifest.xml
-- Java/Kotlin source classes
-- XML layouts
-- strings, colors, styles and themes
-- drawables and vector icons
-- navigation resources
-- menus and assets when required
-- README.md
-
-Use complete file paths relative to the project root.
+Build a real professional multi-screen application. Implement actual functionality, navigation, storage, APIs and error handling requested.
+Include settings.gradle, root build.gradle, gradle.properties, app/build.gradle, AndroidManifest.xml, Java/Kotlin source, XML layouts, resources, vector icons and README.md.
+Use complete file paths relative to the project root. Ensure package declarations and XML references are consistent.
 Do not include APKs, caches, build output or local machine paths.
-Include every class referenced by the manifest and layouts.
-Ensure package declarations and XML references are consistent.
-
 Output every file using exactly:
 FILE: relative/path/to/file
 \`\`\`language
 complete file content
 \`\`\`
-
-Output complete files, not snippets.
-Do not omit essential implementation files.`;
-
+Output complete files, not snippets.`;
 try{
-$("buildProgress").style.width="15%";
-const answer=await completion([{role:"user",content:prompt}]);
-
+$("buildProgress").style.width="20%";
+const answer=await completion([{role:"user",content:prompt}],$("builderProvider").value);
 const count=parseFiles(answer);
 if(!count)throw new Error("The AI returned no files in the required FILE format.");
-
 $("buildProgress").style.width="55%";
 $("buildStatus").textContent=count+" AI files received. Completing project structure...";
-
 ensureAndroidProject();
-
-const errors=validateProject();
-if(errors.length){
-throw new Error("Project validation failed: "+errors.join("; "));
-}
-
-renderFiles();
-
-$("buildProgress").style.width="75%";
-$("buildStatus").textContent="Packaging "+Object.keys(project).length+" files into Android Studio ZIP...";
-
+const errors=validateProject();if(errors.length)throw new Error(errors.join("; "));
+renderFiles();$("buildProgress").style.width="75%";
 await downloadProject(true);
-
 $("buildProgress").style.width="100%";
 $("buildStatus").textContent="Project ZIP generated. "+Object.keys(project).length+" files included.";
-
-showPage("builder");
-
-}catch(e){
-$("buildProgress").style.width="0%";
-$("buildStatus").textContent="Generation failed: "+e.message;
-}finally{
-busy=false;
-$("buildBtn").disabled=false;
-}
+}catch(e){$("buildProgress").style.width="0%";$("buildStatus").textContent="Generation failed: "+e.message}
+finally{busy=false;$("buildBtn").disabled=false}
 }
 
-/* ZIP EXPORT */
-async function downloadProject(automatic=false){
-saveFile(false);
-
-if(!Object.keys(project).length){
-if(!automatic)alert("No project files to export.");
-return false;
-}
-if(typeof JSZip==="undefined"){
-if(!automatic)alert("ZIP library unavailable.");
-return false;
-}
-
-const folder=safeAppFolder(projectName||$("appName").value||"AndroidProject");
-const zip=new JSZip();
-
-for(const [path,content] of Object.entries(project)){
-const safe=cleanPath(path);
-if(!safe)continue;
-if(typeof content==="string"&&content.startsWith("data:image/png;base64,")){zip.file(folder+"/"+safe,content.split(",")[1],{base64:true});}else{zip.file(folder+"/"+safe,content);}
-}
-
-try{
-const blob=await zip.generateAsync({
-type:"blob",
-compression:"DEFLATE",
-compressionOptions:{level:6}
-});
-
-const url=URL.createObjectURL(blob);
-const a=document.createElement("a");
-a.href=url;
-a.download=folder+"-Android-Studio-Project.zip";
-document.body.appendChild(a);
-a.click();
-a.remove();
-
-setTimeout(()=>URL.revokeObjectURL(url),10000);
-
-if(!automatic){
-$("buildStatus").textContent="Project ZIP downloaded successfully.";
-}
-return true;
-
-}catch(e){
-if(!automatic)alert("ZIP export failed: "+e.message);
-throw e;
-}
-}
-
-/* APK BUILD BACKEND */
+/* GITHUB ACTIONS BUILD */
 async function buildAPK(){
 saveFile(false);
-if(!Object.keys(project).length){alert("Generate or import a project first.");return}
-ensureAndroidProject();
+if(!Object.keys(project).length)return alert("Generate or import a project first.");
 if(busy)return;
+ensureAndroidProject();
+const errors=validateProject();
+if(errors.length)return alert("Project validation failed: "+errors.join("; "));
 const btn=$("apkBuildBtn"),type=$("apkBuildType").value;
-btn.disabled=true;
-$("githubBuildProgress").style.width="3%";
+btn.disabled=true;$("githubBuildProgress").style.width="3%";
 $("githubBuildLogs").textContent="Preparing Android project...\n";
-$("apkBuildStatus").textContent="Creating a private GitHub repository...";
+$("apkBuildStatus").textContent="Sending project to GitHub build service...";
 $("githubRunLink").classList.add("hidden");
 try{
 await applyUploadedIcon();
@@ -1064,11 +825,12 @@ const payload={projectName:projectName||$("appName").value||"AndroidProject",pac
 const response=await fetch("/api/build",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
 const result=await response.json().catch(()=>({}));
 if(!response.ok)throw new Error(result.error||"Build request failed (HTTP "+response.status+").");
+if(!result.repository)throw new Error("Build service did not return a repository name.");
 const repository=result.repository;
-$("githubBuildLogs").textContent+="Private repository created: "+repository+"\nPushing project files and workflow...\n";
+$("githubBuildLogs").textContent+="Private repository created: "+repository+"\nGitHub Actions build queued...\n";
 $("apkBuildStatus").textContent="GitHub Actions build queued ("+type+").";
 $("githubBuildProgress").style.width="12%";
-$("githubRunLink").href=result.repositoryUrl;$("githubRunLink").textContent="Open private GitHub repository";$("githubRunLink").classList.remove("hidden");
+if(result.repositoryUrl){$("githubRunLink").href=result.repositoryUrl;$("githubRunLink").textContent="Open GitHub repository";$("githubRunLink").classList.remove("hidden")}
 await monitorGitHubBuild(repository,type);
 }catch(e){
 $("apkBuildStatus").textContent="APK build failed: "+e.message;
@@ -1093,13 +855,14 @@ const logText=lines.join("\n");
 if(logText!==lastText){$("githubBuildLogs").textContent=logText;lastText=logText}
 if(data.runUrl){$("githubRunLink").href=data.runUrl;$("githubRunLink").textContent="Open GitHub Actions build logs"}
 if(data.status==="completed"){
-if(data.conclusion!=="success")throw new Error("GitHub Actions build "+(data.conclusion||"failed")+". Open the Actions run for full compiler output.");
+if(data.conclusion!=="success")throw new Error("GitHub Actions build "+(data.conclusion||"failed")+". Open the Actions run for compiler output.");
 if(!data.artifact)throw new Error("Build succeeded but no APK artifact was uploaded.");
 $("apkBuildStatus").textContent="Build successful. Downloading APK artifact...";
 const download=await fetch("/api/build?action=download&repository="+encodeURIComponent(repository)+"&artifactId="+data.artifact.id);
 if(!download.ok)throw new Error("APK artifact download failed (HTTP "+download.status+").");
 const blob=await download.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");
-a.href=url;a.download="CodeX-"+type+"-APK-artifact.zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+a.href=url;a.download="CodeX-"+type+"-APK-artifact.zip";document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),15000);
 $("apkBuildStatus").textContent="APK build completed. The APK is inside the downloaded artifact ZIP.";
 $("githubBuildProgress").style.width="100%";
 return;
@@ -1109,7 +872,7 @@ $("apkBuildStatus").textContent="GitHub Actions is "+data.status+"...";
 throw new Error("Build timed out after 20 minutes. Check the GitHub Actions run.");
 }
 async function applyUploadedIcon(){
-const file=$("appIconFile")?.files?.[0];if(!file)return;
+const file=$("appIconFile").files[0];if(!file)return;
 if(!/^image\/(png|jpeg)$/.test(file.type))throw new Error("Choose a PNG or JPG icon.");
 const source=await createImageBitmap(file);
 const sizes={mdpi:48,hdpi:72,xhdpi:96,xxhdpi:144,xxxhdpi:192};
@@ -1121,39 +884,36 @@ ctx.drawImage(source,(size-w)/2,(size-h)/2,w,h);
 project["app/src/main/res/mipmap-"+density+"/ic_launcher.png"]=canvas.toDataURL("image/png");
 }
 source.close?.();
-project["app/src/main/AndroidManifest.xml"]=project["app/src/main/AndroidManifest.xml"].replace("<application","<application\n        android:icon=\"@mipmap/ic_launcher\"\n        android:roundIcon=\"@mipmap/ic_launcher\"");
+const path="app/src/main/AndroidManifest.xml";
+if(project[path]&&!project[path].includes('android:icon="@mipmap/ic_launcher"')){
+project[path]=project[path].replace("<application","<application\n        android:icon=\"@mipmap/ic_launcher\"");
+}
 }
 
 /* ZIP IMPORT */
 $("importFiles").onchange=async e=>{
 const file=e.target.files[0];if(!file)return;
 try{
-const zip=await JSZip.loadAsync(file);
-const imported={};
+const zip=await JSZip.loadAsync(file),imported={};
 for(const path of Object.keys(zip.files)){
-const entry=zip.files[path];
-if(entry.dir)continue;
-const safe=cleanPath(path);
-if(!safe)continue;
-if(!/\.(java|kt|xml|gradle|properties|json|txt|md|pro|js|html|css|yml|yaml|toml|sql|sh|bat|cmake|c|cpp|h|aidl)$/i.test(safe)&&!safe.endsWith("gradlew"))continue;
+const entry=zip.files[path];if(entry.dir)continue;
+const safe=cleanPath(path);if(!safe)continue;
+if(!/\.(java|kt|xml|gradle|properties|json|txt|md|pro|js|html|css|yml|yaml|toml|sql|sh|bat|c|cpp|h|aidl)$/i.test(safe)&&!safe.endsWith("gradlew"))continue;
 imported[safe]=await entry.async("string");
 }
 if(!Object.keys(imported).length)throw new Error("No readable project source files were found.");
-project=imported;
-selectedFile=null;
-$("currentFile").textContent="Select a file";
-$("fileEditor").value="";
+project=imported;selectedFile=null;
 const rootSettings=Object.keys(project).find(p=>p.endsWith("/settings.gradle")||p==="settings.gradle");
 if(rootSettings&&rootSettings!=="settings.gradle"){
-const prefix=rootSettings.slice(0,-"settings.gradle".length);
-const normalized={};
-Object.keys(project).forEach(p=>{
-const key=p.startsWith(prefix)?p.slice(prefix.length):p;
-normalized[key]=project[p];
-});
+const prefix=rootSettings.slice(0,-"settings.gradle".length),normalized={};
+Object.keys(project).forEach(p=>normalized[p.startsWith(prefix)?p.slice(prefix.length):p]=project[p]);
 project=normalized;
 }
+projectName=file.name.replace(/\.zip$/i,"")||"ImportedProject";
+$("appName").value=projectName;
 renderFiles();
+$("currentFile").textContent="Select a file";$("fileEditor").value="";
+$("buildStatus").textContent="Imported "+Object.keys(project).length+" files.";
 alert("Imported "+Object.keys(project).length+" project files.");
 }catch(err){alert("ZIP import failed: "+err.message)}
 e.target.value="";
@@ -1167,11 +927,10 @@ apkData=null;apkReportData="";
 };
 async function analyzeAPK(){
 const file=$("apkFile").files[0];
-if(!file){alert("Select an APK first.");return}
+if(!file)return alert("Select an APK first.");
 $("analyzeBtn").disabled=true;$("apkProgress").style.width="10%";
 $("apkStatus").textContent="Reading APK archive...";
 try{
-if(typeof JSZip==="undefined")throw new Error("ZIP library unavailable.");
 const zip=await JSZip.loadAsync(file),names=Object.keys(zip.files);
 const dex=names.filter(n=>/^classes\d*\.dex$/.test(n));
 const resources=names.filter(n=>n.startsWith("res/"));
@@ -1186,8 +945,7 @@ const data=await entry.async("uint8array");
 const text=new TextDecoder("utf-8",{fatal:false}).decode(data);
 if(text.length<12000&&/^[\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]*$/.test(text))extracted.push("\n--- "+path+" ---\n"+text.slice(0,5000));
 }catch{}
-index++;
-$("apkProgress").style.width=Math.round(10+index/Math.min(interesting.length,60)*75)+"%";
+index++;$("apkProgress").style.width=Math.round(10+index/Math.min(interesting.length,60)*75)+"%";
 }
 let dexStrings=[];
 for(const path of dex.slice(0,8)){
@@ -1215,16 +973,13 @@ ${names.slice(0,400).join("\n")}
 
 NOTE: This is archive inspection, not full DEX decompilation. Binary AndroidManifest.xml requires a dedicated decoder.`;
 $("apkReport").textContent=apkReportData;
-$("apkProgress").style.width="100%";
-$("apkStatus").textContent="APK archive analysis completed.";
-}catch(e){
-$("apkProgress").style.width="0%";
-$("apkStatus").textContent="Analysis failed: "+e.message;
-}
+$("apkProgress").style.width="100%";$("apkStatus").textContent="APK archive analysis completed.";
+}catch(e){$("apkProgress").style.width="0%";$("apkStatus").textContent="Analysis failed: "+e.message}
 $("analyzeBtn").disabled=false;
 }
 async function reconstructAPK(){
-if(!apkData){alert("Analyze an APK first.");return}
+if(!apkData)return alert("Analyze an APK first.");
+if(!configured($("analyzerProvider").value))return alert("Configure an AI provider first.");
 if(busy)return;
 busy=true;$("apkStatus").textContent="Sending analysis to AI...";
 try{
@@ -1243,21 +998,17 @@ ${apkData.dexStrings.slice(0,16000)}
 Create Gradle configuration, manifest, Java/Kotlin source classes, XML layouts, resource values, reconstructed navigation and documentation explaining uncertain components.
 
 Printable DEX strings are not full decompiled source. Clearly identify inferred behavior, missing native libraries and unavailable code. Do not claim exact original source recovery. Generate complete files using the required FILE format.`;
-const answer=await completion([{role:"user",content:prompt}]);
-const count=parseFiles(answer);
+const answer=await completion([{role:"user",content:prompt}],$("analyzerProvider").value);
+project={};const count=parseFiles(answer);
 if(!count)throw new Error("The AI did not return any FILE blocks.");
 projectName=apkData.filename.replace(/\.apk$/i,"")+"_Reconstructed";
 projectPackage="com.reconstructed.app";
-$("appName").value=projectName;
-$("packageName").value=projectPackage;
+$("appName").value=projectName;$("packageName").value=projectPackage;
 ensureAndroidProject();
-const errors=validateProject();
-if(errors.length)throw new Error(errors.join("; "));
-renderFiles();
-$("apkReport").textContent+="\n\nAI RECONSTRUCTION:\n"+answer;
+const errors=validateProject();if(errors.length)throw new Error(errors.join("; "));
+renderFiles();$("apkReport").textContent+="\n\nAI RECONSTRUCTION:\n"+answer;
 $("apkStatus").textContent=count+" AI files generated. Downloading project ZIP...";
-showPage("builder");
-await downloadProject(true);
+showPage("builder");await downloadProject(true);
 $("apkStatus").textContent="Reconstructed Android Studio ZIP downloaded.";
 }catch(e){$("apkStatus").textContent="Reconstruction failed: "+e.message}
 finally{busy=false}

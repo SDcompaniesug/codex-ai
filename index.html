@@ -133,11 +133,13 @@ h3{margin:0 0 10px}
   <div class="progress"><div id="buildProgress"></div></div><p id="buildStatus" class="small">Ready to build.</p>
  </div>
  <div class="card">
-  <h3>Project ZIP and APK build</h3><p>A source ZIP can be created directly in this browser. To compile an APK, connect a backend that has Java, Gradle and the Android SDK installed.</p>
-  <label>Build service URL (optional)</label><input id="buildServiceUrl" placeholder="https://your-build-server.example.com/build">
-  <label>Build service token (optional)</label><input id="buildServiceToken" type="password" placeholder="Backend access token">
-  <div class="row mobilewrap" style="margin-top:12px"><button class="green" onclick="downloadProject()">Download Android Studio ZIP</button><button class="secondary" id="apkBuildBtn" onclick="buildAPK()">Compile APK using backend</button></div>
-  <p id="apkBuildStatus" class="small">APK compilation requires a configured build service.</p>
+  <h3>GitHub cloud APK builder</h3><p>GitHub Actions compiles your Android project in the cloud. No personal server or hosting subscription is required. A GitHub token is needed to upload source files and read build artifacts.</p>
+  <label>GitHub repository</label><input id="githubRepo" placeholder="SDcompaniesug/codex-ai">
+  <label>GitHub Personal Access Token</label><input id="githubToken" type="password" autocomplete="off" placeholder="Fine-grained token with repository access">
+  <p class="small">Create a <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:#79adff">fine-grained token</a> for this repository. Grant Contents: Read and write, and Actions: Read. Keep the token private; it is stored only in this browser's local storage and is never added to your source project.</p>
+  <div class="row mobilewrap" style="margin-top:12px"><button class="secondary" onclick="saveGitHubSettings()">Save GitHub settings</button><button class="secondary" onclick="downloadProject()">Download project ZIP</button><button class="green" id="apkBuildBtn" onclick="buildAPK()">Upload project & Build APK</button></div>
+  <div class="row mobilewrap" style="margin-top:10px"><button class="secondary" id="checkBuildBtn" onclick="checkGitHubBuild()">Check build / Download APK</button><button class="secondary" onclick="openGitHubActions()">Open GitHub Actions</button></div>
+  <p id="apkBuildStatus" class="small">Set your GitHub token once, then build APKs directly from CodeX AI.</p>
  </div>
 </section>
 <section class="page" id="analyzer">
@@ -228,7 +230,7 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>showPage(b.dataset.pa
 function fillProviderSelects(){["providerSelect","chatProvider","builderProvider","analyzerProvider"].forEach(id=>{$(id).innerHTML=PROVIDER_NAMES.map(p=>'<option value="'+p+'">'+p+'</option>').join("");$(id).value=currentProvider()})}
 function initializeProviders(){
  fillProviderSelects();$("fallbackEnabled").checked=localStorage.getItem("cx_fallback")!=="false";
- $("buildServiceUrl").value=localStorage.getItem("cx_build_url")||"";$("buildServiceToken").value=localStorage.getItem("cx_build_token")||"";
+
  renderFallback();renderConnections();loadProviderForm();refreshUI();
 }
 function loadProviderForm(){
@@ -536,14 +538,116 @@ async function downloadProject(){
  $("buildStatus").textContent="Packaging "+Object.keys(project).length+" project files...";
  try{const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=folder+"-Android-Studio-Project.zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);$("buildStatus").textContent="Project ZIP created: "+folder+"-Android-Studio-Project.zip"}catch(e){alert("ZIP export failed: "+e.message)}
 }
+function loadGitHubSettings(){
+ $("githubRepo").value=localStorage.getItem("cx_github_repo")||"SDcompaniesug/codex-ai";
+ $("githubToken").value=localStorage.getItem("cx_github_token")||"";
+}
+function saveGitHubSettings(){
+ const repo=$("githubRepo").value.trim(),token=$("githubToken").value.trim();
+ if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)){alert("Enter repository in owner/repository format.");return false}
+ if(!token){alert("Enter a GitHub fine-grained token.");return false}
+ localStorage.setItem("cx_github_repo",repo);localStorage.setItem("cx_github_token",token);
+ $("apkBuildStatus").textContent="GitHub settings saved for "+repo+".";return true;
+}
+function githubConfig(){
+ const repo=$("githubRepo").value.trim()||localStorage.getItem("cx_github_repo")||"SDcompaniesug/codex-ai";
+ const token=$("githubToken").value.trim()||localStorage.getItem("cx_github_token")||"";
+ if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo))throw new Error("Repository must use owner/repository format.");
+ if(!token)throw new Error("Add a GitHub token with Contents read/write and Actions read permissions.");
+ return {repo,token};
+}
+async function githubRequest(path,method="GET",body=null){
+ const {token}=githubConfig(),headers={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"};
+ if(body)headers["Content-Type"]="application/json";
+ let response;try{response=await fetch("https://api.github.com/repos/"+githubConfig().repo+"/"+path,{method,headers,body:body?JSON.stringify(body):undefined})}
+ catch(e){throw new Error("Could not reach GitHub API: "+e.message+". Check your connection or browser restrictions.")}
+ const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{data={message:raw}}
+ if(!response.ok)throw new Error("GitHub API "+response.status+": "+(data.message||raw||"Request failed"));
+ return data;
+}
+async function uploadProjectToGitHub(){
+ const {repo}=githubConfig(),branch="main",paths=Object.keys(project).filter(p=>cleanPath(p)).sort();
+ if(!paths.length)throw new Error("There are no project files to upload.");
+ $("apkBuildStatus").textContent="Connecting to GitHub and preparing "+paths.length+" files...";
+ const ref=await githubRequest("git/ref/heads/"+branch),parentSha=ref.object.sha;
+ const parent=await githubRequest("git/commits/"+parentSha),baseTree=parent.tree.sha,tree=[];
+ for(let i=0;i<paths.length;i++){
+  const path=paths[i],blob=await githubRequest("git/blobs","POST",{content:project[path],encoding:"utf-8"});
+  tree.push({path,mode:"100644",type:"blob",sha:blob.sha});
+  $("apkBuildStatus").textContent="Uploading source files to GitHub: "+(i+1)+"/"+paths.length+" — "+path;
+ }
+ const newTree=await githubRequest("git/trees","POST",{base_tree:baseTree,tree});
+ const commit=await githubRequest("git/commits","POST",{message:"CodeX AI: upload Android project "+(projectName||"project"),tree:newTree.sha,parents:[parentSha]});
+ await githubRequest("git/refs/heads/"+branch,"PATCH",{sha:commit.sha,force:false});
+ localStorage.setItem("cx_last_build_sha",commit.sha);localStorage.setItem("cx_last_build_repo",repo);
+ return {sha:commit.sha,repo};
+}
+function openGitHubActions(){
+ const repo=$("githubRepo").value.trim()||localStorage.getItem("cx_github_repo")||"SDcompaniesug/codex-ai";
+ window.open("https://github.com/"+repo+"/actions","_blank","noopener");
+}
+async function waitForGitHubRun(commitSha,repo){
+ for(let i=0;i<60;i++){
+  const data=await githubRequest("actions/workflows/android-build.yml/runs?branch=main&event=push&per_page=20");
+  const run=(data.workflow_runs||[]).find(x=>x.head_sha===commitSha);
+  if(run){
+   localStorage.setItem("cx_last_run_id",String(run.id));localStorage.setItem("cx_last_run_url",run.html_url||"");
+   if(run.status==="completed")return run;
+   $("apkBuildStatus").textContent="GitHub Actions is building your APK ("+run.status+(run.run_started_at?" since "+new Date(run.run_started_at).toLocaleTimeString():"")+").";
+  }else{$("apkBuildStatus").textContent="Project uploaded. Waiting for GitHub Actions to start..."}
+  await new Promise(resolve=>setTimeout(resolve,5000));
+ }
+ return null;
+}
+async function downloadGitHubAPK(runId){
+ const {repo}=githubConfig();
+ const data=await githubRequest("actions/runs/"+runId+"/artifacts");
+ const artifact=(data.artifacts||[]).find(a=>a.name==="CodeX-Android-APK"&&!a.expired);
+ if(!artifact)throw new Error("APK artifact is not available yet. Check the workflow result and build logs.");
+ $("apkBuildStatus").textContent="Downloading APK artifact from GitHub Actions...";
+ const {token}=githubConfig();let response;
+ try{response=await fetch("https://api.github.com/repos/"+repo+"/actions/artifacts/"+artifact.id+"/zip",{headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}})}
+ catch(e){throw new Error("Artifact download was blocked by the browser. Open GitHub Actions and download CodeX-Android-APK manually.")}
+ if(!response.ok)throw new Error("Artifact download HTTP "+response.status+". Open GitHub Actions to download it manually.");
+ const archive=await JSZip.loadAsync(await response.blob()),apkPath=Object.keys(archive.files).find(p=>p.toLowerCase().endsWith(".apk"));
+ if(!apkPath)throw new Error("The workflow artifact did not contain an APK. Download the build logs to inspect the failure.");
+ const blob=await archive.file(apkPath).async("blob"),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=apkPath.split("/").pop()||"app-debug.apk";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+ $("apkBuildStatus").textContent="APK downloaded successfully: "+a.download+" ("+(blob.size/1024/1024).toFixed(2)+" MB).";
+}
+async function checkGitHubBuild(){
+ const btn=$("checkBuildBtn");btn.disabled=true;
+ try{
+  const repo=$("githubRepo").value.trim()||localStorage.getItem("cx_last_build_repo")||"SDcompaniesug/codex-ai";
+  const sha=localStorage.getItem("cx_last_build_sha");if(!sha)throw new Error("No CodeX build commit is saved yet. Upload a project and start a build first.");
+  const data=await githubRequest("actions/workflows/android-build.yml/runs?branch=main&event=push&per_page=20");
+  const run=(data.workflow_runs||[]).find(x=>x.head_sha===sha);
+  if(!run)throw new Error("No workflow run found for the latest uploaded project yet. Wait a moment and check again.");
+  localStorage.setItem("cx_last_run_id",String(run.id));localStorage.setItem("cx_last_run_url",run.html_url||"");
+  if(run.status!=="completed"){$("apkBuildStatus").textContent="Build is still running: "+run.status+". Open Actions to follow the live logs.";return}
+  if(run.conclusion!=="success"){$("apkBuildStatus").textContent="Build "+run.conclusion+". Open Actions for the build logs: "+run.html_url;return}
+  await downloadGitHubAPK(run.id);
+ }catch(e){$("apkBuildStatus").textContent="Build check: "+e.message}
+ finally{btn.disabled=false}
+}
 async function buildAPK(){
- saveFile(false);if(!Object.keys(project).length){alert("Generate or import a project first.");return}ensureAndroidProject();const endpoint=$("buildServiceUrl").value.trim(),token=$("buildServiceToken").value.trim();if(!endpoint){alert("Enter your build service URL first. A browser cannot run Android Gradle builds by itself.");return}
- localStorage.setItem("cx_build_url",endpoint);localStorage.setItem("cx_build_token",token);const btn=$("apkBuildBtn");btn.disabled=true;$("apkBuildStatus").textContent="Uploading project to build service...";
- try{const headers={"Content-Type":"application/json"};if(token)headers.Authorization="Bearer "+token;const response=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify({projectName:projectName||$("appName").value||"AndroidProject",packageName:projectPackage||$("packageName").value||"com.example.myapp",files:project})});
- if(!response.ok){const message=await response.text();throw new Error("Build service HTTP "+response.status+": "+message.slice(0,500))}
- const contentType=response.headers.get("content-type")||"";if(contentType.includes("application/json")){const result=await response.json();if(result.apkUrl){$("apkBuildStatus").textContent="Build service returned an APK URL. Opening it...";window.open(result.apkUrl,"_blank","noopener")}else{$("apkBuildStatus").textContent="Build service response: "+JSON.stringify(result).slice(0,1000)}}
- else{const blob=await response.blob();if(!blob.size)throw new Error("Build service returned an empty file.");const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=safeAppFolder(projectName)+"-build-output.zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);$("apkBuildStatus").textContent="Build output downloaded. Check the ZIP for the APK and build logs."}
- }catch(e){$("apkBuildStatus").textContent="APK build failed: "+e.message+". Check the build service URL, CORS policy and backend logs."}finally{btn.disabled=false}
+ saveFile(false);if(!Object.keys(project).length){alert("Generate or import an Android project first.");return}
+ ensureAndroidProject();const errors=validateProject();if(errors.length){alert("Project is incomplete:\\n"+errors.join("\\n"));return}
+ if(!saveGitHubSettings())return;
+ const btn=$("apkBuildBtn");btn.disabled=true;$("apkBuildStatus").textContent="Preparing project for GitHub Actions...";
+ try{
+  const uploaded=await uploadProjectToGitHub();
+  $("apkBuildStatus").textContent="Project committed to "+uploaded.repo+". Waiting for GitHub's cloud Android build...";
+  const run=await waitForGitHubRun(uploaded.sha,uploaded.repo);
+  if(!run){
+   $("apkBuildStatus").textContent="Project uploaded and build should be queued. GitHub may still be starting the runner. Tap Check build / Download APK in a moment.";
+   return;
+  }
+  if(run.status==="completed"&&run.conclusion==="success")await downloadGitHubAPK(run.id);
+  else if(run.status==="completed")$("apkBuildStatus").textContent="APK build "+run.conclusion+". Open Actions to inspect the build log: "+run.html_url;
+  else $("apkBuildStatus").textContent="Build is still running. Open Actions for live progress: "+run.html_url;
+ }catch(e){$("apkBuildStatus").textContent="GitHub build error: "+e.message}
+ finally{btn.disabled=false}
 }
 $("importFiles").onchange=async e=>{
  const file=e.target.files[0];if(!file)return;try{const zip=await JSZip.loadAsync(file),imported={};for(const path of Object.keys(zip.files)){const entry=zip.files[path];if(entry.dir)continue;const safe=cleanPath(path);if(!safe)continue;if(!/\\.(java|kt|xml|gradle|properties|json|txt|md|pro|js|html|css|yml|yaml|toml|sql|sh|bat|cmake|c|cpp|h|aidl)$/i.test(safe)&&!safe.endsWith("gradlew"))continue;imported[safe]=await entry.async("string")}
@@ -599,7 +703,7 @@ Printable DEX strings are not full decompiled source. Clearly identify inferred 
  const answer=await completion([{role:"user",content:prompt}]),count=parseFiles(answer);if(!count)throw new Error("The AI did not return any FILE blocks.");projectName=apkData.filename.replace(/\\.apk$/i,"")+"_Reconstructed";projectPackage="com.reconstructed.app";ensureAndroidProject();$("apkReport").textContent+="\\n\\nAI RECONSTRUCTION:\\n"+answer;$("apkStatus").textContent=count+" AI files generated; "+Object.keys(project).length+" total files after scaffolding.";renderFiles();showPage("workspace")
  }catch(e){$("apkStatus").textContent="Reconstruction failed: "+e.message}finally{busy=false}
 }
-initializeProviders();renderFiles();
+initializeProviders();loadGitHubSettings();renderFiles();
 </script>
 </body>
 </html>

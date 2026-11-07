@@ -180,16 +180,20 @@ h3{margin:0 0 10px}
 </div>
 
 <div class="card">
-<h3>APK compilation</h3>
-<p>Compile your generated source project into an installable APK using a remote build service.</p>
-<label>Build service URL</label>
-<input id="buildServiceUrl" placeholder="https://your-build-server.example.com/build">
-<label>Build service token</label>
-<input id="buildServiceToken" type="password" placeholder="Backend access token">
+<h3>GitHub APK compilation</h3>
+<p>CodeX creates a private GitHub repository for this project and compiles it with GitHub Actions. No GitHub login is needed in the browser.</p>
+<label>Build type</label>
+<select id="apkBuildType"><option value="debug">Debug APK</option><option value="release">Release APK (unsigned)</option></select>
+<label>Application icon (PNG or JPG)</label>
+<input id="appIconFile" type="file" accept="image/png,image/jpeg">
+<p class="small">Optional. The image is converted into Android launcher icon resources and added to the project before upload.</p>
 <div class="row mobilewrap" style="margin-top:12px">
-<button class="green" id="apkBuildBtn" onclick="buildAPK()">Compile APK</button>
+<button class="green" id="apkBuildBtn" onclick="buildAPK()">Create GitHub Repository & Compile APK</button>
 </div>
-<p id="apkBuildStatus" class="small">APK compilation requires a configured build service.</p>
+<p id="apkBuildStatus" class="small">Ready. Select Debug or Release and start the build.</p>
+<div class="progress"><div id="githubBuildProgress"></div></div>
+<pre id="githubBuildLogs" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;background:#0c1525;border:1px solid var(--line);border-radius:9px;padding:12px;color:#c5d5eb">Build logs will appear here.</pre>
+<a id="githubRunLink" class="small hidden" target="_blank" rel="noopener">Open GitHub Actions run</a>
 </div>
 </section>
 
@@ -1011,7 +1015,7 @@ const zip=new JSZip();
 for(const [path,content] of Object.entries(project)){
 const safe=cleanPath(path);
 if(!safe)continue;
-zip.file(folder+"/"+safe,content);
+if(typeof content==="string"&&content.startsWith("data:image/png;base64,")){zip.file(folder+"/"+safe,content.split(",")[1],{base64:true});}else{zip.file(folder+"/"+safe,content);}
 }
 
 try{
@@ -1047,53 +1051,77 @@ async function buildAPK(){
 saveFile(false);
 if(!Object.keys(project).length){alert("Generate or import a project first.");return}
 ensureAndroidProject();
-const endpoint=$("buildServiceUrl").value.trim();
-const token=$("buildServiceToken").value.trim();
-if(!endpoint){alert("Enter your build service URL first. A browser cannot run Android Gradle builds by itself.");return}
-localStorage.setItem("cx_build_url",endpoint);
-localStorage.setItem("cx_build_token",token);
-const btn=$("apkBuildBtn");
-btn.disabled=true;$("apkBuildStatus").textContent="Uploading project to build service...";
+if(busy)return;
+const btn=$("apkBuildBtn"),type=$("apkBuildType").value;
+btn.disabled=true;
+$("githubBuildProgress").style.width="3%";
+$("githubBuildLogs").textContent="Preparing Android project...\\n";
+$("apkBuildStatus").textContent="Creating a private GitHub repository...";
+$("githubRunLink").classList.add("hidden");
 try{
-const headers={"Content-Type":"application/json"};
-if(token)headers.Authorization="Bearer "+token;
-const response=await fetch(endpoint,{
-method:"POST",headers,
-body:JSON.stringify({
-projectName:projectName||$("appName").value||"AndroidProject",
-packageName:projectPackage||$("packageName").value||"com.example.myapp",
-files:project
-})
-});
-if(!response.ok){
-const message=await response.text();
-throw new Error("Build service HTTP "+response.status+": "+message.slice(0,500));
-}
-const contentType=response.headers.get("content-type")||"";
-if(contentType.includes("application/json")){
-const result=await response.json();
-if(result.apkUrl){
-const link=document.createElement("a");
-link.href=result.apkUrl;
-link.target="_blank";
-link.rel="noopener";
-link.click();
-$("apkBuildStatus").textContent="Build service returned an APK URL.";
-}else{
-$("apkBuildStatus").textContent="Build service response: "+JSON.stringify(result).slice(0,1000);
-}
-}else{
-const blob=await response.blob();
-if(!blob.size)throw new Error("Build service returned an empty file.");
-const url=URL.createObjectURL(blob),a=document.createElement("a");
-a.href=url;a.download=safeAppFolder(projectName)+"-build-output.zip";
-document.body.appendChild(a);a.click();a.remove();
-setTimeout(()=>URL.revokeObjectURL(url),5000);
-$("apkBuildStatus").textContent="Build output downloaded. Check the ZIP for the APK and build logs.";
-}
+await applyUploadedIcon();
+const payload={projectName:projectName||$("appName").value||"AndroidProject",packageName:projectPackage||$("packageName").value||"com.example.myapp",buildType:type,files:project};
+const response=await fetch("/api/build",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+const result=await response.json().catch(()=>({}));
+if(!response.ok)throw new Error(result.error||"Build request failed (HTTP "+response.status+").");
+const repository=result.repository;
+$("githubBuildLogs").textContent+="Private repository created: "+repository+"\\nPushing project files and workflow...\\n";
+$("apkBuildStatus").textContent="GitHub Actions build queued ("+type+").";
+$("githubBuildProgress").style.width="12%";
+$("githubRunLink").href=result.repositoryUrl;$("githubRunLink").textContent="Open private GitHub repository";$("githubRunLink").classList.remove("hidden");
+await monitorGitHubBuild(repository,type);
 }catch(e){
-$("apkBuildStatus").textContent="APK build failed: "+e.message+". Check build service URL, CORS and backend logs.";
+$("apkBuildStatus").textContent="APK build failed: "+e.message;
+$("githubBuildLogs").textContent+="\\nERROR: "+e.message;
 }finally{btn.disabled=false}
+}
+async function monitorGitHubBuild(repository,type){
+const started=Date.now();let lastText="";
+while(Date.now()-started<20*60*1000){
+await new Promise(resolve=>setTimeout(resolve,7000));
+const response=await fetch("/api/build?action=status&repository="+encodeURIComponent(repository));
+const data=await response.json().catch(()=>({}));
+if(!response.ok)throw new Error(data.error||"Could not read GitHub build status.");
+const pct=data.status==="queued"?18:data.status==="in_progress"?45:data.conclusion==="success"?100:85;
+$("githubBuildProgress").style.width=pct+"%";
+const lines=["Repository: "+repository,"Build type: "+type.toUpperCase(),"Run status: "+data.status,"Conclusion: "+(data.conclusion||"pending"),""];
+(data.jobs||[]).forEach(job=>{
+lines.push("JOB: "+job.name+" — "+job.status+(job.conclusion?" ("+job.conclusion+")":""));
+(job.steps||[]).forEach(step=>lines.push("  "+step.name+" — "+step.status+(step.conclusion?" ("+step.conclusion+")":"")));
+});
+const logText=lines.join("\\n");
+if(logText!==lastText){$("githubBuildLogs").textContent=logText;lastText=logText}
+if(data.runUrl){$("githubRunLink").href=data.runUrl;$("githubRunLink").textContent="Open GitHub Actions build logs"}
+if(data.status==="completed"){
+if(data.conclusion!=="success")throw new Error("GitHub Actions build "+(data.conclusion||"failed")+". Open the Actions run for full compiler output.");
+if(!data.artifact)throw new Error("Build succeeded but no APK artifact was uploaded.");
+$("apkBuildStatus").textContent="Build successful. Downloading APK artifact...";
+const download=await fetch("/api/build?action=download&repository="+encodeURIComponent(repository)+"&artifactId="+data.artifact.id);
+if(!download.ok)throw new Error("APK artifact download failed (HTTP "+download.status+").");
+const blob=await download.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");
+a.href=url;a.download="CodeX-"+type+"-APK-artifact.zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+$("apkBuildStatus").textContent="APK build completed. The APK is inside the downloaded artifact ZIP.";
+$("githubBuildProgress").style.width="100%";
+return;
+}
+$("apkBuildStatus").textContent="GitHub Actions is "+data.status+"...";
+}
+throw new Error("Build timed out after 20 minutes. Check the GitHub Actions run.");
+}
+async function applyUploadedIcon(){
+const file=$("appIconFile")?.files?.[0];if(!file)return;
+if(!/^image\\/(png|jpeg)$/.test(file.type))throw new Error("Choose a PNG or JPG icon.");
+const source=await createImageBitmap(file);
+const sizes={mdpi:48,hdpi:72,xhdpi:96,xxhdpi:144,xxxhdpi:192};
+for(const [density,size] of Object.entries(sizes)){
+const canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;
+const ctx=canvas.getContext("2d");ctx.clearRect(0,0,size,size);
+const scale=Math.max(size/source.width,size/source.height),w=source.width*scale,h=source.height*scale;
+ctx.drawImage(source,(size-w)/2,(size-h)/2,w,h);
+project["app/src/main/res/mipmap-"+density+"/ic_launcher.png"]=canvas.toDataURL("image/png");
+}
+source.close?.();
+project["app/src/main/AndroidManifest.xml"]=project["app/src/main/AndroidManifest.xml"].replace("<application","<application\\n        android:icon=\"@mipmap/ic_launcher\"\\n        android:roundIcon=\"@mipmap/ic_launcher\"");
 }
 
 /* ZIP IMPORT */

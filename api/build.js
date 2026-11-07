@@ -71,7 +71,8 @@ module.exports = async (req, res) => {
         const path = String(rawPath).replace(/^\/+/, "");
         if (!path || path.split("/").some(p => p === ".." || p === ".")) continue;
         const content = String(rawContent);
-        const blob = await gh(token, "/repos/" + full + "/git/blobs", { method: "POST", body: JSON.stringify({ content, encoding: "utf-8" }) });
+        const isPng = content.startsWith("data:image/png;base64,");
+        const blob = await gh(token, "/repos/" + full + "/git/blobs", { method: "POST", body: JSON.stringify({ content: isPng ? content.slice(content.indexOf(",") + 1) : content, encoding: isPng ? "base64" : "utf-8" }) });
         tree.push({ path, mode: "100644", type: "blob", sha: blob.sha });
       }
       const workflowBlob = await gh(token, "/repos/" + full + "/git/blobs", { method: "POST", body: JSON.stringify({ content: workflow, encoding: "utf-8" }) });

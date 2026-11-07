@@ -650,7 +650,7 @@ $("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e
 
 /* PROJECT FILES */
 function cleanPath(path){
-path=String(path||"").trim().replace(/\\/g,"/").replace(/^\/+/,"");
+path=String(path||"").trim().replace(/\/g,"/").replace(/^\/+/,"");
 if(!path||path.length>240||path.split("/").some(p=>!p||p===".."||p==="."))return null;
 if(path.includes(":"))return null;
 return path;
@@ -1055,7 +1055,7 @@ if(busy)return;
 const btn=$("apkBuildBtn"),type=$("apkBuildType").value;
 btn.disabled=true;
 $("githubBuildProgress").style.width="3%";
-$("githubBuildLogs").textContent="Preparing Android project...\\n";
+$("githubBuildLogs").textContent="Preparing Android project...\n";
 $("apkBuildStatus").textContent="Creating a private GitHub repository...";
 $("githubRunLink").classList.add("hidden");
 try{
@@ -1065,14 +1065,14 @@ const response=await fetch("/api/build",{method:"POST",headers:{"Content-Type":"
 const result=await response.json().catch(()=>({}));
 if(!response.ok)throw new Error(result.error||"Build request failed (HTTP "+response.status+").");
 const repository=result.repository;
-$("githubBuildLogs").textContent+="Private repository created: "+repository+"\\nPushing project files and workflow...\\n";
+$("githubBuildLogs").textContent+="Private repository created: "+repository+"\nPushing project files and workflow...\n";
 $("apkBuildStatus").textContent="GitHub Actions build queued ("+type+").";
 $("githubBuildProgress").style.width="12%";
 $("githubRunLink").href=result.repositoryUrl;$("githubRunLink").textContent="Open private GitHub repository";$("githubRunLink").classList.remove("hidden");
 await monitorGitHubBuild(repository,type);
 }catch(e){
 $("apkBuildStatus").textContent="APK build failed: "+e.message;
-$("githubBuildLogs").textContent+="\\nERROR: "+e.message;
+$("githubBuildLogs").textContent+="\nERROR: "+e.message;
 }finally{btn.disabled=false}
 }
 async function monitorGitHubBuild(repository,type){
@@ -1089,7 +1089,7 @@ const lines=["Repository: "+repository,"Build type: "+type.toUpperCase(),"Run st
 lines.push("JOB: "+job.name+" — "+job.status+(job.conclusion?" ("+job.conclusion+")":""));
 (job.steps||[]).forEach(step=>lines.push("  "+step.name+" — "+step.status+(step.conclusion?" ("+step.conclusion+")":"")));
 });
-const logText=lines.join("\\n");
+const logText=lines.join("\n");
 if(logText!==lastText){$("githubBuildLogs").textContent=logText;lastText=logText}
 if(data.runUrl){$("githubRunLink").href=data.runUrl;$("githubRunLink").textContent="Open GitHub Actions build logs"}
 if(data.status==="completed"){
@@ -1110,7 +1110,7 @@ throw new Error("Build timed out after 20 minutes. Check the GitHub Actions run.
 }
 async function applyUploadedIcon(){
 const file=$("appIconFile")?.files?.[0];if(!file)return;
-if(!/^image\\/(png|jpeg)$/.test(file.type))throw new Error("Choose a PNG or JPG icon.");
+if(!/^image\/(png|jpeg)$/.test(file.type))throw new Error("Choose a PNG or JPG icon.");
 const source=await createImageBitmap(file);
 const sizes={mdpi:48,hdpi:72,xhdpi:96,xxhdpi:144,xxxhdpi:192};
 for(const [density,size] of Object.entries(sizes)){
@@ -1121,7 +1121,7 @@ ctx.drawImage(source,(size-w)/2,(size-h)/2,w,h);
 project["app/src/main/res/mipmap-"+density+"/ic_launcher.png"]=canvas.toDataURL("image/png");
 }
 source.close?.();
-project["app/src/main/AndroidManifest.xml"]=project["app/src/main/AndroidManifest.xml"].replace("<application","<application\\n        android:icon=\"@mipmap/ic_launcher\"\\n        android:roundIcon=\"@mipmap/ic_launcher\"");
+project["app/src/main/AndroidManifest.xml"]=project["app/src/main/AndroidManifest.xml"].replace("<application","<application\n        android:icon=\"@mipmap/ic_launcher\"\n        android:roundIcon=\"@mipmap/ic_launcher\"");
 }
 
 /* ZIP IMPORT */

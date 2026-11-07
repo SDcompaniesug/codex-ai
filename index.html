@@ -135,7 +135,7 @@ pre{overflow-wrap:anywhere;white-space:pre-wrap}
 <div class="row mobilewrap">
 <select id="localModelSelect" onchange="changeLocalModel(this.value)" style="flex:1">
 <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Qwen2.5 0.5B (smallest)</option>
-<option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 1.5B (larger)</option>
+<option value="Qwen2.5-1.5B-Instruct-q4f32_1-MLC">Qwen2.5 1.5B (larger)</option>
 </select>
 <button id="loadLocalModelBtn" class="green" onclick="loadLocalModel()">Load local model</button>
 </div>
@@ -554,7 +554,7 @@ async function discoverModels(){
 saveProvider();
 const name=$("providerSelect").value,cfg=getConfig(name),p=PROVIDERS[name];
 if(p.type==="local"){
-const models=["Qwen2.5-0.5B-Instruct-q4f16_1-MLC","Qwen2.5-1.5B-Instruct-q4f16_1-MLC"];
+const models=["Qwen2.5-0.5B-Instruct-q4f16_1-MLC","Qwen2.5-1.5B-Instruct-q4f32_1-MLC"];
 localStorage.setItem("cx_models_"+name,JSON.stringify(models));
 renderDiscoveredSelect(name);
 $("providerStatus").textContent="Local models listed. No API request or key needed.";

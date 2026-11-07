@@ -175,7 +175,7 @@ h3{margin:0 0 10px}
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
-const SYSTEM=\`You are CodeX AI, a professional Android development coding agent.
+const SYSTEM=`You are CodeX AI, a professional Android development coding agent.
 
 Generate complete, maintainable Android Studio projects. Follow the user's requested technology and architecture. Do not replace a multi-screen application with one giant activity without a good reason.
 
@@ -198,7 +198,7 @@ complete file content
 
 Each file must have its own FILE header and fenced code block. Output complete files, not snippets. If the project is too large for one response, prioritize core files and clearly state which files remain.
 
-When reconstructing APKs, distinguish recovered information from inferred implementation. Never claim approximate reconstruction is the exact original source.\`;
+When reconstructing APKs, distinguish recovered information from inferred implementation. Never claim approximate reconstruction is the exact original source.`;
 const PROVIDERS={
  FreeModel:{base:"https://freemodel.in/v1",type:"openai"},
  Gemini:{base:"https://generativelanguage.googleapis.com/v1beta",type:"gemini"},
@@ -320,7 +320,7 @@ function clearChat(){messages=[];$("chatbox").innerHTML='<div class="msg assista
 async function sendChat(){const input=$("chatInput"),text=input.value.trim();if(!text||busy)return;input.value="";addMessage(text,"user");messages.push({role:"user",content:text});busy=true;$("sendBtn").disabled=true;try{const answer=await completion(messages);messages.push({role:"assistant",content:answer});addMessage(answer,"assistant")}catch(e){addMessage("Error: "+e.message,"assistant")}busy=false;$("sendBtn").disabled=false}
 $("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat()}});
 function cleanPath(path){path=String(path||"").trim().replace(/\\\\/g,"/").replace(/^\\/+ /,"");path=path.replace(/^\\/+ /,"");if(!path||path.length>240||path.split("/").some(p=>!p||p===".."||p==="."))return null;if(path.includes(":"))return null;return path}
-function parseFiles(answer){const regex=/FILE:\\s*([^\\r\\n]+)\\s*\\r?\\n\\s*\`\`\`[^\\r\\n]*\\r?\\n([\\s\\S]*?)\`\`\`/g;let match,count=0;while((match=regex.exec(answer))){const path=cleanPath(match[1]);if(!path)continue;project[path]=match[2].replace(/\\n$/,"");count++}return count}
+function parseFiles(answer){const regex=/FILE:\\s*([^\\r\\n]+)\\s*\\r?\\n\\s*```[^\\r\\n]*\\r?\\n([\\s\\S]*?)```/g;let match,count=0;while((match=regex.exec(answer))){const path=cleanPath(match[1]);if(!path)continue;project[path]=match[2].replace(/\\n$/,"");count++}return count}
 function renderFiles(){
  const list=$("fileList"),paths=Object.keys(project).sort();$("fileCount").textContent=paths.length+" project files";if(!paths.length){list.textContent="No project files yet.";return}list.innerHTML="";
  paths.forEach(path=>{const el=document.createElement("div");el.className="fileitem"+(path===selectedFile?" selected":"");el.textContent=path;el.onclick=()=>{saveFile(false);selectedFile=path;$("currentFile").textContent=path;$("fileEditor").value=project[path];renderFiles()};list.appendChild(el)});
@@ -332,7 +332,7 @@ function packageToPath(pkg){return pkg.split(".").join("/")}
 function putDefault(path,content){if(!Object.prototype.hasOwnProperty.call(project,path))project[path]=content}
 function ensureAndroidProject(){
  const appName=$("appName").value.trim()||projectName||"My Android App",pkg=$("packageName").value.trim()||projectPackage||"com.example.myapp",technology=$("technology").value,minSdk=Number($("minSdk").value)||24,targetSdk=Number($("targetSdk").value)||35,isJava=technology==="Java + XML",mainClass=isJava?"MainActivity.java":"MainActivity.kt",mainPath="app/src/main/java/"+packageToPath(pkg)+"/"+mainClass;
- const activityCode=isJava?\`package \${pkg};
+ const activityCode=isJava?`package ${pkg};
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -343,7 +343,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
-}\`:\`package \${pkg}
+}`:`package ${pkg}
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -353,11 +353,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
     }
-}\`;
- const rootBuild=\`plugins {
+}`;
+ const rootBuild=`plugins {
     id 'com.android.application' version '8.7.3' apply false
-}\`;
- const settings=\`pluginManagement {
+}`;
+ const settings=`pluginManagement {
     repositories {
         google()
         mavenCentral()
@@ -371,21 +371,21 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = '\${appName.replace(/['\\\\]/g,"")}'
+rootProject.name = '${appName.replace(/['\\\\]/g,"")}'
 include ':app'
-\`;
- const appBuild=\`plugins {
+`;
+ const appBuild=`plugins {
     id 'com.android.application'
 }
 
 android {
-    namespace '\${pkg}'
+    namespace '${pkg}'
     compileSdk 35
 
     defaultConfig {
-        applicationId '\${pkg}'
-        minSdk \${minSdk}
-        targetSdk \${targetSdk}
+        applicationId '${pkg}'
+        minSdk ${minSdk}
+        targetSdk ${targetSdk}
         versionCode 1
         versionName '1.0'
     }
@@ -394,18 +394,18 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-\${isJava?"":\`
+${isJava?"":`
     kotlinOptions {
         jvmTarget = '17'
-    }\`}
+    }`}
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
-}\`;
- const manifest=\`<?xml version="1.0" encoding="utf-8"?>
+}`;
+ const manifest=`<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="true"
@@ -413,7 +413,7 @@ dependencies {
         android:supportsRtl="true"
         android:theme="@style/Theme.CodeXApp">
         <activity
-            android:name="\${pkg}.MainActivity"
+            android:name="${pkg}.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -421,8 +421,8 @@ dependencies {
             </intent-filter>
         </activity>
     </application>
-</manifest>\`;
- const layout=\`<?xml version="1.0" encoding="utf-8"?>
+</manifest>`;
+ const layout=`<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -440,38 +440,38 @@ dependencies {
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>\`;
- const strings=\`<?xml version="1.0" encoding="utf-8"?>
+</androidx.constraintlayout.widget.ConstraintLayout>`;
+ const strings=`<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">\${escapeXML(appName)}</string>
-</resources>\`;
- const colors=\`<?xml version="1.0" encoding="utf-8"?>
+    <string name="app_name">${escapeXML(appName)}</string>
+</resources>`;
+ const colors=`<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="primary">#246BCE</color>
     <color name="primary_dark">#174A91</color>
     <color name="accent">#35A7E8</color>
-</resources>\`;
- const themes=\`<?xml version="1.0" encoding="utf-8"?>
+</resources>`;
+ const themes=`<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.CodeXApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
         <item name="colorSecondary">@color/accent</item>
     </style>
-</resources>\`;
+</resources>`;
  putDefault("settings.gradle",settings);putDefault("build.gradle",rootBuild);putDefault("gradle.properties","org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\\nandroid.useAndroidX=true\\nandroid.nonTransitiveRClass=true\\n");
  putDefault("app/build.gradle",appBuild);putDefault("app/src/main/AndroidManifest.xml",manifest);putDefault(mainPath,activityCode);putDefault("app/src/main/res/layout/activity_main.xml",layout);putDefault("app/src/main/res/values/strings.xml",strings);putDefault("app/src/main/res/values/colors.xml",colors);putDefault("app/src/main/res/values/themes.xml",themes);
- putDefault("README.md",\`# \${appName}
+ putDefault("README.md",`# ${appName}
 
 Android Studio project generated with CodeX AI.
 
 ## Project configuration
-- Package: \${pkg}
-- Technology: \${technology}
+- Package: ${pkg}
+- Technology: ${technology}
 - Android Gradle Plugin: 8.7.3
 - Compile SDK: 35
-- Minimum SDK: \${minSdk}
-- Target SDK: \${targetSdk}
+- Minimum SDK: ${minSdk}
+- Target SDK: ${targetSdk}
 - Java compatibility: 17
 
 ## Open the project
@@ -485,7 +485,7 @@ Android Studio project generated with CodeX AI.
 This ZIP contains project source files. It has not been compiled by this browser. To obtain a verified APK, build it with Android Studio or connect a CodeX AI build backend.
 
 The Gradle wrapper JAR is not fabricated or included. Android Studio can open the project and use its configured Gradle installation; generate a wrapper from a Gradle installation if you require wrapper scripts.
-\`);
+`);
  projectName=appName;projectPackage=pkg;return {appName,pkg,technology};
 }
 function escapeXML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")}
@@ -493,17 +493,17 @@ function validateProject(){const errors=[];["settings.gradle","build.gradle","gr
 async function buildProject(){
  const name=$("appName").value.trim()||"MyAndroidApp",pkg=$("packageName").value.trim()||"com.example.myapp",desc=$("appDescription").value.trim();if(!desc){alert("Describe your application first.");return}if(!/^[a-zA-Z_]\\w*(\\.[a-zA-Z_]\\w*)+$/.test(pkg)){alert("Enter a valid package name.");return}if(busy)return;
  busy=true;$("buildBtn").disabled=true;project={};selectedFile=null;$("buildProgress").style.width="5%";$("buildStatus").textContent="Generating Android project files...";projectName=name;projectPackage=pkg;
- const prompt=\`Create a complete professional Android Studio application.
+ const prompt=`Create a complete professional Android Studio application.
 
-Application name: \${name}
-Package: \${pkg}
-Technology: \${$("technology").value}
-Minimum SDK: \${$("minSdk").value}
-Target SDK: \${$("targetSdk").value}
+Application name: ${name}
+Package: ${pkg}
+Technology: ${$("technology").value}
+Minimum SDK: ${$("minSdk").value}
+Target SDK: ${$("targetSdk").value}
 Use AGP 8.7.3, compileSdk 35 and Java 17.
 
 APPLICATION REQUIREMENTS:
-\${desc}
+${desc}
 
 Create a real multi-file implementation. Use separate Activities or Fragments and classes as appropriate. Implement navigation, user interactions, storage, API integration and error handling requested in the description. Do not use fake buttons or placeholder screens.
 
@@ -523,11 +523,11 @@ Use valid paths relative to the project root. Do not include build output, APKs,
 
 Output complete files only, using this exact format:
 FILE: relative/path/to/file
-\`\`\`language
+```language
 complete file content
-\`\`\`
+```
 
-Prioritize a complete compilable project. Do not omit essential classes.\`;
+Prioritize a complete compilable project. Do not omit essential classes.`;
  try{$("buildProgress").style.width="20%";const answer=await completion([{role:"user",content:prompt}]);const count=parseFiles(answer);$("buildProgress").style.width="65%";if(count===0)throw new Error("The AI response did not contain files in the required FILE format. Try again or ask the AI to output FILE blocks.");ensureAndroidProject();$("buildProgress").style.width="85%";const errors=validateProject();$("buildProgress").style.width="100%";$("buildStatus").textContent=count+" AI files received. "+Object.keys(project).length+" total project files after scaffolding."+(errors.length?" Validation notes: "+errors.join("; "):" Core project structure validated.");renderFiles();showPage("workspace")}
  catch(e){$("buildProgress").style.width="0%";$("buildStatus").textContent="Project generation failed: "+e.message}
  finally{busy=false;$("buildBtn").disabled=false}
@@ -663,43 +663,43 @@ async function analyzeAPK(){
  for(const path of interesting.slice(0,60)){const entry=zip.file(path);if(!entry)continue;try{const data=await entry.async("uint8array"),text=new TextDecoder("utf-8",{fatal:false}).decode(data);if(text.length<12000&&/^[\\x09\\x0A\\x0D\\x20-\\x7E\\u00A0-\\uFFFF]*$/.test(text))extracted.push("\\n--- "+path+" ---\\n"+text.slice(0,5000))}catch{}index++;$("apkProgress").style.width=Math.round(10+index/Math.min(interesting.length,60)*75)+"%"}
  let dexStrings=[];for(const path of dex.slice(0,8)){const data=await zip.file(path).async("uint8array"),text=new TextDecoder("latin1").decode(data),strings=text.match(/[ -~]{5,}/g)||[];dexStrings.push(path+":\\n"+strings.slice(0,200).join("\\n"))}
  apkData={filename:file.name,names,dex,resources,assets,native,extracted:extracted.join("\\n"),dexStrings:dexStrings.join("\\n\\n")};
- apkReportData=\`APK: \${file.name}
-Total entries: \${names.length}
-DEX files: \${dex.length}
-Resource files: \${resources.length}
-Assets: \${assets.length}
-Native libraries: \${native.length}
+ apkReportData=`APK: ${file.name}
+Total entries: ${names.length}
+DEX files: ${dex.length}
+Resource files: ${resources.length}
+Assets: ${assets.length}
+Native libraries: ${native.length}
 
 DEX:
-\${dex.join("\\n")}
+${dex.join("\\n")}
 
 Native libraries:
-\${native.join("\\n")}
+${native.join("\\n")}
 
 Archive entries:
-\${names.slice(0,400).join("\\n")}
+${names.slice(0,400).join("\\n")}
 
-NOTE: This is archive inspection, not full DEX decompilation. Binary AndroidManifest.xml requires a dedicated decoder.\`;
+NOTE: This is archive inspection, not full DEX decompilation. Binary AndroidManifest.xml requires a dedicated decoder.`;
  $("apkReport").textContent=apkReportData;$("apkProgress").style.width="100%";$("apkStatus").textContent="APK archive analysis completed."
  }catch(e){$("apkProgress").style.width="0%";$("apkStatus").textContent="Analysis failed: "+e.message}$("analyzeBtn").disabled=false;
 }
 async function reconstructAPK(){
  if(!apkData){alert("Analyze an APK first.");return}if(busy)return;busy=true;$("apkStatus").textContent="Sending analysis to AI...";
- try{const prompt=\`Reconstruct a maintainable Android Studio project from this APK inspection.
+ try{const prompt=`Reconstruct a maintainable Android Studio project from this APK inspection.
 
-APK: \${apkData.filename}
+APK: ${apkData.filename}
 ARCHIVE REPORT:
-\${apkReportData}
+${apkReportData}
 
 EXTRACTED TEXT RESOURCES:
-\${apkData.extracted.slice(0,18000)}
+${apkData.extracted.slice(0,18000)}
 
 PRINTABLE DEX STRINGS:
-\${apkData.dexStrings.slice(0,16000)}
+${apkData.dexStrings.slice(0,16000)}
 
 Create Gradle configuration, manifest, Java/Kotlin source classes, XML layouts, resource values, reconstructed navigation and documentation explaining uncertain components.
 
-Printable DEX strings are not full decompiled source. Clearly identify inferred behavior, missing native libraries and unavailable code. Do not claim exact original source recovery. Generate complete files using the required FILE format.\`;
+Printable DEX strings are not full decompiled source. Clearly identify inferred behavior, missing native libraries and unavailable code. Do not claim exact original source recovery. Generate complete files using the required FILE format.`;
  const answer=await completion([{role:"user",content:prompt}]),count=parseFiles(answer);if(!count)throw new Error("The AI did not return any FILE blocks.");projectName=apkData.filename.replace(/\\.apk$/i,"")+"_Reconstructed";projectPackage="com.reconstructed.app";ensureAndroidProject();$("apkReport").textContent+="\\n\\nAI RECONSTRUCTION:\\n"+answer;$("apkStatus").textContent=count+" AI files generated; "+Object.keys(project).length+" total files after scaffolding.";renderFiles();showPage("workspace")
  }catch(e){$("apkStatus").textContent="Reconstruction failed: "+e.message}finally{busy=false}
 }

@@ -129,6 +129,19 @@ pre{overflow-wrap:anywhere;white-space:pre-wrap}
 <select id="chatModel" style="flex:1"></select>
 <button class="secondary" onclick="clearChat()">Clear</button>
 </div>
+<div class="card" id="localModelCard" style="margin-top:12px">
+<h3>CodeX Local AI</h3>
+<p class="small">Runs an open-source model in this browser using WebGPU. No API key, paid tokens or AI request charges. The first download is large and uses your device's memory and GPU.</p>
+<div class="row mobilewrap">
+<select id="localModelSelect" onchange="changeLocalModel(this.value)" style="flex:1">
+<option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Qwen2.5 0.5B (smallest)</option>
+<option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen2.5 1.5B (larger)</option>
+</select>
+<button id="loadLocalModelBtn" class="green" onclick="loadLocalModel()">Load local model</button>
+</div>
+<div class="progress"><div id="localModelProgress"></div></div>
+<p id="localModelStatus" class="small">Model not loaded. Select CodeX Local AI above to use it.</p>
+</div>
 <div class="chatbox" id="chatbox"><div class="msg assistant">Hello! I'm CodeX AI. What are we building today?</div></div>
 <div class="row"><textarea id="chatInput" style="min-height:65px" placeholder="Ask me to write Java, XML, Gradle or fix Android errors..."></textarea><button id="sendBtn" onclick="sendChat()">Send</button></div>
 <p class="small">Enter to send • Shift+Enter for a new line</p>
@@ -301,7 +314,9 @@ Include all essential source files, XML layouts, resources, manifest and Gradle 
 
 When reconstructing APKs, distinguish recovered information from inferred implementation. Never claim approximate reconstruction is exact original source.`;
 
+const DEFAULT_LOCAL_MODEL="Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
 const PROVIDERS={
+"CodeX Local AI":{base:"",type:"local"},
 FreeModel:{base:"https://freemodel.in/v1",type:"openai"},
 Gemini:{base:"https://generativelanguage.googleapis.com/v1beta",type:"gemini"},
 Groq:{base:"https://api.groq.com/openai/v1",type:"openai"},
@@ -316,6 +331,7 @@ const PROVIDER_NAMES=Object.keys(PROVIDERS);
 const DEFAULT_ORDER=[...PROVIDER_NAMES];
 
 let messages=[],project={},selectedFile=null,apkData=null,apkReportData="",busy=false;
+let localEngine=null,localEngineModel="",localEnginePromise=null;
 let projectName="MyAndroidApp",projectPackage="com.example.myapp";
 
 function escapeHTML(s){
@@ -327,7 +343,9 @@ try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback
 function getConfigs(){return safeJSON("cx_providers",{})}
 function saveConfigs(data){localStorage.setItem("cx_providers",JSON.stringify(data))}
 function getConfig(name){
-return {key:"",base:PROVIDERS[name].base,model:"",account:"",...(getConfigs()[name]||{})};
+const defaults={key:"",base:PROVIDERS[name].base,model:name==="CodeX Local AI"?DEFAULT_LOCAL_MODEL:"",account:""};
+const saved=getConfigs()[name]||{};
+return {...defaults,...saved,model:name==="CodeX Local AI"?(saved.model||DEFAULT_LOCAL_MODEL):(saved.model||"")};
 }
 function currentProvider(){
 const n=localStorage.getItem("cx_active_provider")||"Gemini";
@@ -337,7 +355,10 @@ function getOrder(){
 const saved=safeJSON("cx_fallback_order",DEFAULT_ORDER);
 return Array.isArray(saved)?[...saved.filter(x=>PROVIDERS[x]),...DEFAULT_ORDER.filter(x=>!saved.includes(x))]:[...DEFAULT_ORDER];
 }
-function configured(name){const c=getConfig(name);return !!(c.key&&c.model)}
+function configured(name){
+const c=getConfig(name);
+return name==="CodeX Local AI"?!!c.model:!!(c.key&&c.model);
+}
 
 function showPage(name){
 document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
@@ -361,22 +382,27 @@ $("fallbackEnabled").checked=localStorage.getItem("cx_fallback")!=="false";
 renderFallback();renderConnections();loadProviderForm();refreshUI();
 }
 function loadProviderForm(){
-const name=$("providerSelect").value,cfg=getConfig(name);
+const name=$("providerSelect").value,cfg=getConfig(name),isLocal=name==="CodeX Local AI";
 $("providerKey").value=cfg.key;
 $("providerEndpoint").value=cfg.base;
 $("providerModel").value=cfg.model;
 $("cloudflareAccount").value=cfg.account;
 $("cloudflareFields").classList.toggle("hidden",name!=="Cloudflare");
+$("providerKey").previousElementSibling.classList.toggle("hidden",isLocal);
+$("providerKey").classList.toggle("hidden",isLocal);
+$("providerEndpoint").previousElementSibling.classList.toggle("hidden",isLocal);
+$("providerEndpoint").classList.toggle("hidden",isLocal);
+$("providerModel").previousElementSibling.textContent=isLocal?"Local model ID":"Model ID";
 renderDiscoveredSelect(name);
-$("providerStatus").textContent="Editing "+name+". Fetch models or enter a model ID manually.";
+$("providerStatus").textContent=isLocal?"No API key required. Choose a model on the AI Assistant page and load it in your browser.":"Editing "+name+". Fetch models or enter a model ID manually.";
 }
 function renderDiscoveredSelect(name){
 const models=safeJSON("cx_models_"+name,[]);
 $("discoveredModels").innerHTML='<option value="">Select a discovered model</option>'+models.map(m=>'<option value="'+escapeHTML(m)+'">'+escapeHTML(m)+'</option>').join("");
 }
 function saveProvider(){
-const name=$("providerSelect").value,configs=getConfigs();
-configs[name]={key:$("providerKey").value.trim(),base:$("providerEndpoint").value.trim().replace(/\/+$/,""),model:$("providerModel").value.trim(),account:$("cloudflareAccount").value.trim()};
+const name=$("providerSelect").value,configs=getConfigs(),isLocal=name==="CodeX Local AI";
+configs[name]={key:isLocal?"":$("providerKey").value.trim(),base:isLocal?"":$("providerEndpoint").value.trim().replace(/\/+$/,""),model:$("providerModel").value.trim()||(isLocal?DEFAULT_LOCAL_MODEL:""),account:$("cloudflareAccount").value.trim()};
 saveConfigs(configs);
 localStorage.setItem("cx_active_provider",name);
 $("chatProvider").value=name;$("builderProvider").value=name;$("analyzerProvider").value=name;
@@ -416,15 +442,70 @@ renderConnections();renderFallback();refreshUI();loadProviderForm();
 }
 function refreshUI(){
 const n=currentProvider(),c=getConfig(n),ok=configured(n);
-$("connection").textContent=ok?"● "+n+" connected":"● Not connected";
+$("connection").textContent=ok?"● "+n+(n==="CodeX Local AI"?" selected":" connected"):"● Not connected";
 $("homeModel").textContent=ok?n+" • "+c.model:"No provider configured.";
 $("chatProvider").value=n;
 $("chatModel").innerHTML=ok?'<option>'+escapeHTML(c.model)+'</option>':'<option>No model configured</option>';
-$("topStatus").textContent=ok?"● Connected":"● Ready";
+$("topStatus").textContent=ok?(n==="CodeX Local AI"?"● Local model":"● Connected"):"● Ready";
+if($("localModelSelect"))$("localModelSelect").value=getConfig("CodeX Local AI").model;
 }
 
+async function ensureLocalEngine(){
+const cfg=getConfig("CodeX Local AI");
+if(!navigator.gpu)throw new Error("WebGPU is unavailable in this browser or device. Try a supported Chrome or Edge browser on a compatible device.");
+if(localEngine&&localEngineModel===cfg.model)return localEngine;
+if(localEnginePromise)return localEnginePromise;
+localEnginePromise=(async()=>{
+$("localModelStatus").textContent="Downloading and initializing "+cfg.model+"...";
+$("localModelProgress").style.width="2%";
+const mod=await import("https://esm.run/@mlc-ai/web-llm");
+const engine=await mod.CreateMLCEngine(cfg.model,{
+initProgressCallback:(p)=>{
+$("localModelStatus").textContent=p.text||"Loading local model...";
+if(typeof p.progress==="number")$("localModelProgress").style.width=Math.max(2,Math.min(100,p.progress*100))+"%";
+}
+});
+localEngine=engine;localEngineModel=cfg.model;
+$("localModelProgress").style.width="100%";
+$("localModelStatus").textContent="Ready: "+cfg.model+". Model runs on this device.";
+$("loadLocalModelBtn").textContent="Model loaded";
+return engine;
+})().finally(()=>{localEnginePromise=null});
+return localEnginePromise;
+}
+async function loadLocalModel(){
+try{
+$("loadLocalModelBtn").disabled=true;
+await ensureLocalEngine();
+}catch(e){
+$("localModelStatus").textContent="Could not load model: "+e.message;
+$("localModelProgress").style.width="0%";
+}finally{$("loadLocalModelBtn").disabled=false}
+}
+function changeLocalModel(model){
+if(!model)return;
+if(localEngine&&localEngineModel!==model){
+$("localModelStatus").textContent="A model is already loaded. Reload this page to switch models safely.";
+$("localModelSelect").value=localEngineModel;
+return;
+}
+const configs=getConfigs();
+configs["CodeX Local AI"]={...(configs["CodeX Local AI"]||{}),key:"",base:"",model,account:""};
+saveConfigs(configs);
+if($("providerSelect").value==="CodeX Local AI")$("providerModel").value=model;
+refreshUI();renderConnections();renderFallback();
+$("localModelStatus").textContent="Selected "+model+". Load it to start chatting.";
+}
 async function providerRequest(name,history){
 const cfg=getConfig(name),p=PROVIDERS[name];
+if(p.type==="local"){
+const engine=await ensureLocalEngine();
+const localMessages=history.map(m=>({role:m.role==="system"||m.role==="assistant"?m.role:"user",content:m.content}));
+const result=await engine.chat.completions.create({messages:localMessages,temperature:0.3,max_tokens:1200});
+const answer=result.choices?.[0]?.message?.content||"";
+if(!answer)throw new Error("The local model returned an empty response.");
+return answer;
+}
 if(!cfg.key||!cfg.model)throw new Error(name+" is not configured.");
 const messagesForApi=history.map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.content}));
 let url="",headers={"Content-Type":"application/json"},body={};
@@ -458,6 +539,7 @@ return text;
 }
 async function completion(history,preferred){
 const start=preferred||currentProvider();
+if(start==="CodeX Local AI")return await providerRequest(start,history);
 const fallback=localStorage.getItem("cx_fallback")!=="false";
 const order=fallback?getOrder().filter(configured):[start];
 const attempts=[start,...order.filter(x=>x!==start)];
@@ -471,6 +553,13 @@ throw new Error("All configured providers failed.\n"+errors.join("\n"));
 async function discoverModels(){
 saveProvider();
 const name=$("providerSelect").value,cfg=getConfig(name),p=PROVIDERS[name];
+if(p.type==="local"){
+const models=["Qwen2.5-0.5B-Instruct-q4f16_1-MLC","Qwen2.5-1.5B-Instruct-q4f16_1-MLC"];
+localStorage.setItem("cx_models_"+name,JSON.stringify(models));
+renderDiscoveredSelect(name);
+$("providerStatus").textContent="Local models listed. No API request or key needed.";
+return;
+}
 $("providerStatus").textContent="Fetching models...";
 try{
 let url="",headers={Authorization:"Bearer "+cfg.key};
@@ -516,11 +605,11 @@ messages=[];$("chatbox").innerHTML='<div class="msg assistant">Hello! I am CodeX
 async function sendChat(){
 const input=$("chatInput"),text=input.value.trim();
 if(!text||busy)return;
-if(!configured(currentProvider())){alert("Configure an AI provider first.");showPage("settings");return}
+if(!configured($("chatProvider").value)){alert("Configure an AI provider first.");showPage("settings");return}
 input.value="";messages.push({role:"user",content:text});addMessage("user",text);
 $("sendBtn").disabled=true;
 try{
-const answer=await completion([{role:"user",content:SYSTEM+"\n\n"+text}],$("chatProvider").value);
+const answer=await completion([{role:"system",content:SYSTEM},...messages],$("chatProvider").value);
 messages.push({role:"assistant",content:answer});addMessage("assistant",answer);
 }catch(e){addMessage("assistant","Error: "+e.message)}
 finally{$("sendBtn").disabled=false}
